@@ -39,4 +39,5 @@ e1.ajouter_suspect(s1)
 e1.ajouter_suspect(s2)
 
 for s in e1.suspects:
-    print(s.nom)
+    print(s.nom , s.prenom)
+
