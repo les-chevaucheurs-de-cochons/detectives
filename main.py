@@ -1,65 +1,28 @@
-class Suspect:
-    def __init__(self,nom : str, prenom : str ,age : int, adresse : str):
-        self.nom = nom
-        self.prenom = prenom
-        self.age = age
-        self.adresse = adresse
-
-    def __str__(self):
-        return f"Suspect(nom={self.nom},prenom={self.prenom} ,age={self.age})"
-
-class Preuve:
-    def __init__(self, description : str,lieu : str,element_sup : str = None):
-        self.description = description
-        self.lieu = lieu
-        self.element_sup = element_sup
-
-    def __str__(self):
-        print(f"Preuve({self.description}, lieu={self.lieu})")
+from database import init_db, insert, get_all
 
 
-class Enquete:
-    def __init__(self, titre: str, date_ouverture: int, statut: str = "ouverte"):
-        self.titre = titre
-        self.date_ouverture = date_ouverture
-        self.statut = statut
-        self.suspects: list[Suspect] = []
-        self.preuves: list[Preuve] = []
+def main():
+    print("🔎 Initialisation de la base de données...")
+    init_db()
 
-    def ajouter_suspect(self, suspect: Suspect):
-        self.suspects.append(suspect)
+    print("\n📌 Exemple : création d'une affaire")
 
-    def ajouter_preuve(self, preuve: Preuve):
-        self.preuves.append(preuve)
+    nouvelle_affaire = {
+        "titre": "Vol au musée",
+        "date": "2025-01-01",
+        "lieu": "Bruxelles",
+        "statut": "en cours",
+        "description": "Un objet précieux a été dérobé."
+    }
 
-    def afficher(self):
-        print("Suspects")
-        for s in self.suspects:
-            print(f" - {s.nom} , {s.prenom}")
-        print(f"Date d'ouverture : {self.date_ouverture}")
+    id_affaire = insert("Affaire", nouvelle_affaire)
+    print(f"✅ Affaire insérée avec l'ID : {id_affaire}")
 
-
-
-#e = Enquete("pierre", "couteau", 12)
-#e.afficher()
-
-#s = Suspect('Diego','Ducamp',21,'wavre')
-#print(s)
-
-s1 = Suspect("Pierre" , "Lee" , 19 , "Louv")
-s2 = Suspect('Diego','Ducamp',21,'wavre')
-
-e1 = Enquete("Braquage" , 2025)
-e1.ajouter_suspect(s1)
-e1.ajouter_suspect(s2)
-
-p1 = Preuve('Couteau resté sur place', 'devant la banque')
-e1.ajouter_preuve(p1)
-
-for s in e1.suspects:
-    print(s.nom , s.prenom)
-
-for p in e1.preuves:
-    print(p.description,' / ',p.lieu)
+    print("\n📋 Liste des affaires enregistrées :")
+    affaires = get_all("Affaire")
+    for a in affaires:
+        print(a)
 
 
+if __name__ == "__main__":
+    main()
