@@ -98,13 +98,4 @@ Les données sont stockées dans une base **SQLite**, chargée automatiquement a
 
 # 🛠️ Exemple d’utilisation (CLI)
 
-```bash
-# Ajouter une affaire
-affaire ajouter "Cambriolage banque" --lieu "Bruxelles" --date 2025-02-12
-
-# Associer un suspect
-suspect ajouter "John Doe" --age 32
-affaire associer-suspect 1 3
-
-# Voir les relations d’une arme
-lien arme "Colt 45"
+TODO
