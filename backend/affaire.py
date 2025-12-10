@@ -8,8 +8,10 @@ from database import insert, get_all, get_by_id, update, delete, get_connection
 @dataclass
 class Affaire:
     """
-    Représente une affaire et ses interactions avec la DB.
+    Modèle objet représentant une affaire.
+    Inclut les coordonnées pos_x / pos_y pour l'affichage dans la GUI.
     """
+
     id_affaire: Optional[int]
     titre: str
     date: str
@@ -17,9 +19,15 @@ class Affaire:
     statut: str
     description: Optional[str] = None
 
+    # --- POUR LE MUR VISUEL (FBI Board) ---
+    pos_x: int = 40
+    pos_y: int = 40
+
     TABLE_NAME = "Affaire"
 
-    # -------- utilitaire --------
+    # --------------------------------------------------------
+    # Conversion objet → dict (pour update SQL)
+    # --------------------------------------------------------
     def to_dict(self) -> dict:
         return {
             "titre": self.titre,
@@ -27,13 +35,31 @@ class Affaire:
             "lieu": self.lieu,
             "statut": self.statut,
             "description": self.description,
+            "pos_x": self.pos_x,
+            "pos_y": self.pos_y,
         }
+
+    # --------------------------------------------------------
+    # Construction objet depuis une ligne SQL
+    # --------------------------------------------------------
+    @property
+    def id(self):
+        return self.id_affaire
+
+    @property
+    def uid(self):
+        return f"A{self.id_affaire}"
+
+
 
     @classmethod
     def from_row(cls, row: tuple) -> "Affaire":
-        # ordre = (id_affaire, titre, date, lieu, statut, description)
+        """
+        row = (id_affaire, titre, date, lieu, statut, description, pos_x, pos_y)
+        """
         if row is None:
             raise ValueError("Ligne SQL vide pour Affaire")
+
         return cls(
             id_affaire=row[0],
             titre=row[1],
@@ -41,9 +67,13 @@ class Affaire:
             lieu=row[3],
             statut=row[4],
             description=row[5],
+            pos_x=row[6],
+            pos_y=row[7],
         )
 
-    # -------- CRUD orienté classe --------
+    # --------------------------------------------------------
+    # CRUD : CREATE
+    # --------------------------------------------------------
     @classmethod
     def create(
             cls,
@@ -52,16 +82,22 @@ class Affaire:
             lieu: str,
             statut: str,
             description: Optional[str] = None,
+            pos_x: int = 40,
+            pos_y: int = 40,
     ) -> "Affaire":
-        """create() attendu dans l’issue."""
+
         data = {
             "titre": titre,
             "date": date,
             "lieu": lieu,
             "statut": statut,
             "description": description,
+            "pos_x": pos_x,
+            "pos_y": pos_y,
         }
+
         new_id = insert(cls.TABLE_NAME, data)
+
         return cls(
             id_affaire=new_id,
             titre=titre,
@@ -69,11 +105,15 @@ class Affaire:
             lieu=lieu,
             statut=statut,
             description=description,
+            pos_x=pos_x,
+            pos_y=pos_y,
         )
 
+    # --------------------------------------------------------
+    # CRUD : READ
+    # --------------------------------------------------------
     @classmethod
     def get(cls, id_affaire: int) -> Optional["Affaire"]:
-        """get() attendu dans l’issue."""
         row = get_by_id(cls.TABLE_NAME, id_affaire)
         return cls.from_row(row) if row else None
 
@@ -82,50 +122,62 @@ class Affaire:
         rows = get_all(cls.TABLE_NAME)
         return [cls.from_row(r) for r in rows]
 
-    # -------- CRUD orienté instance --------
-    def update(self, **kwargs) -> None:
-        """update() attendu dans l’issue."""
-        for field, value in kwargs.items():
-            if hasattr(self, field):
-                setattr(self, field, value)
+    # --------------------------------------------------------
+    # CRUD : UPDATE (instance)
+    # --------------------------------------------------------
+    def save(self) -> None:
+        """
+        Persiste l'objet entier dans la DB (pos_x/pos_y compris).
+        Equivalent de update().
+        """
+        if self.id_affaire is None:
+            return  # sécurité
+
         update(self.TABLE_NAME, self.id_affaire, self.to_dict())
 
+    def update(self, **kwargs) -> None:
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+        self.save()
+
+    # --------------------------------------------------------
+    # CRUD : DELETE
+    # --------------------------------------------------------
     def delete(self) -> None:
-        """delete() attendu dans l’issue."""
-        if self.id_affaire is not None:
+        if self.id_affaire:
             delete(self.TABLE_NAME, self.id_affaire)
             self.id_affaire = None
 
-    # -------- Lien affaire ↔ suspects / preuves / armes / lieux --------
+    # --------------------------------------------------------
+    # Liaisons avec d'autres entités
+    # --------------------------------------------------------
     def get_preuves(self):
-        """Toutes les preuves de cette affaire."""
-        from preuve import Preuve  # import local pour éviter les cycles
+        from preuve import Preuve
         return Preuve.list_for_affaire(self.id_affaire)
 
     def get_armes(self):
-        """Toutes les armes de cette affaire."""
         from arme import Arme
         return Arme.list_for_affaire(self.id_affaire)
 
     def get_lieux(self):
-        """Tous les lieux de cette affaire."""
         from lieu import Lieu
         return Lieu.list_for_affaire(self.id_affaire)
 
     def get_suspects(self):
-        """Lister les suspects liés à l’affaire via les preuves."""
         from suspect import Suspect
+
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT DISTINCT s.*
-            FROM Suspect s
-                     JOIN Preuve p ON p.id_suspect = s.id_suspect
-            WHERE p.id_affaire = ?
-            """,
-            (self.id_affaire,),
-        )
+
+        cursor.execute("""
+                       SELECT DISTINCT s.*
+                       FROM Suspect s
+                                JOIN Preuve p ON p.id_suspect = s.id_suspect
+                       WHERE p.id_affaire = ?
+                       """, (self.id_affaire,))
+
         rows = cursor.fetchall()
         conn.close()
+
         return [Suspect.from_row(r) for r in rows]

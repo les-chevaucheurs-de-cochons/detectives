@@ -1,39 +1,43 @@
-# suspect.py
 from dataclasses import dataclass
 from typing import Optional, List
-
-from database import insert, get_all, get_by_id, update, delete, get_connection
+from database import insert, get_all, get_by_id, update, delete
 
 
 @dataclass
 class Suspect:
-    """
-    Représente un suspect.
-    """
     id_suspect: Optional[int]
     nom: str
     prenom: str
     age: Optional[int] = None
     adresse: Optional[str] = None
     description: Optional[str] = None
+    pos_x: int = 80
+    pos_y: int = 80
 
     TABLE_NAME = "Suspect"
 
-    # -------- utilitaire --------
-    def to_dict(self) -> dict:
+    @property
+    def id(self):
+        return self.id_suspect
+
+    @property
+    def uid(self):
+        return f"S{self.id_suspect}"
+
+
+    def to_dict(self):
         return {
             "nom": self.nom,
-            "prénom": self.prenom,   # même nom de colonne que dans la DB
-            "âge": self.age,
+            "prenom": self.prenom,      # ✔ corrigé
+            "age": self.age,            # ✔ corrigé
             "adresse": self.adresse,
             "description": self.description,
+            "pos_x": self.pos_x,
+            "pos_y": self.pos_y,
         }
 
     @classmethod
-    def from_row(cls, row: tuple) -> "Suspect":
-        # ordre = (id_suspect, nom, prénom, âge, adresse, description)
-        if row is None:
-            raise ValueError("Ligne SQL vide pour Suspect")
+    def from_row(cls, row):
         return cls(
             id_suspect=row[0],
             nom=row[1],
@@ -41,75 +45,39 @@ class Suspect:
             age=row[3],
             adresse=row[4],
             description=row[5],
+            pos_x=row[6],
+            pos_y=row[7],
         )
 
-    # -------- CRUD orienté classe --------
     @classmethod
-    def create(
-            cls,
-            nom: str,
-            prenom: str,
-            age: Optional[int] = None,
-            adresse: Optional[str] = None,
-            description: Optional[str] = None,
-    ) -> "Suspect":
+    def create(cls, nom, prenom, age=None, adresse=None, description=None):
         data = {
             "nom": nom,
-            "prénom": prenom,
-            "âge": age,
+            "prenom": prenom,     # ✔ corrigé
+            "age": age,           # ✔ corrigé
             "adresse": adresse,
             "description": description,
+            "pos_x": 80,
+            "pos_y": 80,
         }
         new_id = insert(cls.TABLE_NAME, data)
-        return cls(
-            id_suspect=new_id,
-            nom=nom,
-            prenom=prenom,
-            age=age,
-            adresse=adresse,
-            description=description,
-        )
+        return cls(new_id, nom, prenom, age, adresse, description)
 
     @classmethod
-    def get(cls, id_suspect: int) -> Optional["Suspect"]:
-        row = get_by_id(cls.TABLE_NAME, id_suspect)
-        return cls.from_row(row) if row else None
+    def all(cls):
+        return [cls.from_row(r) for r in get_all(cls.TABLE_NAME)]
 
-    @classmethod
-    def all(cls) -> List["Suspect"]:
-        rows = get_all(cls.TABLE_NAME)
-        return [cls.from_row(r) for r in rows]
-
-    # -------- Association suspect → affaire + liste des suspects d'une affaire --------
-    @classmethod
-    def list_for_affaire(cls, id_affaire: int) -> List["Suspect"]:
-        """
-        Lister les suspects d'une affaire.
-        Association faite via la table Preuve (id_affaire + id_suspect).
-        """
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT DISTINCT s.*
-            FROM Suspect s
-                     JOIN Preuve p ON p.id_suspect = s.id_suspect
-            WHERE p.id_affaire = ?
-            """,
-            (id_affaire,),
-        )
-        rows = cursor.fetchall()
-        conn.close()
-        return [cls.from_row(r) for r in rows]
-
-    # -------- CRUD orienté instance --------
-    def update(self, **kwargs) -> None:
-        for field, value in kwargs.items():
-            if hasattr(self, field):
-                setattr(self, field, value)
+    def update(self, **kwargs):
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
         update(self.TABLE_NAME, self.id_suspect, self.to_dict())
 
-    def delete(self) -> None:
-        if self.id_suspect is not None:
-            delete(self.TABLE_NAME, self.id_suspect)
-            self.id_suspect = None
+    def update_position(self, x, y):
+        self.pos_x = x
+        self.pos_y = y
+        update(self.TABLE_NAME, self.id_suspect, {"pos_x": x, "pos_y": y})
+
+    def delete(self):
+        delete(self.TABLE_NAME, self.id_suspect)
+        self.id_suspect = None
