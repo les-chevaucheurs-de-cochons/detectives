@@ -1,178 +1,175 @@
-from database import insert, get_all, get_by_id, update, delete
+# gestion_enquete.py
+from typing import List, Optional
+
+from .affaire import Affaire
+from .suspect import Suspect
+from .preuves import Preuve
+from .arme import Arme
+from .lieu import Lieu
+
+
+from database import insert, get_all, get_by_id, update, delete   # seulement pour Relation
 
 
 class GestionEnquetes:
     """
-        Moteur central de gestion des enquêtes criminelles.
-        Fournit un CRUD complet pour chaque entité ainsi
-        qu’un système interne de relations.
+    Gestionnaire central de l’application.
+    Interagit avec les modèles (Affaire, Suspect, Preuve, Arme, Lieu)
+    et la table Relation.
     """
 
     # ============================================================
-    #                 CRUD : AFFAIRES
+    #                     AFFAIRES
     # ============================================================
 
-    def creer_affaire(self, titre, date, lieu, statut, description=None):
-        return insert("Affaire", {
-            "titre": titre,
-            "date": date,
-            "lieu": lieu,
-            "statut": statut,
-            "description": description
-        })
+    def creer_affaire(self, *args, **kwargs) -> Affaire:
+        return Affaire.create(*args, **kwargs)
 
-    def get_affaires(self):
-        return get_all("Affaire")
+    def get_affaire(self, id_affaire: int) -> Optional[Affaire]:
+        return Affaire.get(id_affaire)
 
-    def get_affaire(self, id_affaire):
-        return get_by_id("Affaire", id_affaire)
+    def get_affaires(self) -> List[Affaire]:
+        return Affaire.all()
 
-    def maj_affaire(self, id_affaire, data: dict):
-        update("Affaire", id_affaire, data)
+    def supprimer_affaire(self, id_affaire: int):
+        a = Affaire.get(id_affaire)
+        if a:
+            a.delete()
 
-    def supprimer_affaire(self, id_affaire):
-        delete("Affaire", id_affaire)
+    def maj_affaire(self, id_affaire: int, data: dict):
+        a = Affaire.get(id_affaire)
+        if a:
+            a.update(**data)
 
     # ============================================================
-    #                 CRUD : SUSPECTS
+    #                     SUSPECTS
     # ============================================================
 
-    def creer_suspect(self, nom, prénom, âge=None, adresse=None, description=None):
-        return insert("Suspect", {
-            "nom": nom,
-            "prénom": prénom,
-            "âge": âge,
-            "adresse": adresse,
-            "description": description
-        })
+    def creer_suspect(self, *args, **kwargs) -> Suspect:
+        return Suspect.create(*args, **kwargs)
 
-    def get_suspects(self):
-        return get_all("Suspect")
+    def get_suspect(self, id_suspect: int) -> Optional[Suspect]:
+        return Suspect.get(id_suspect)
 
-    def get_suspect(self, id_suspect):
-        return get_by_id("Suspect", id_suspect)
+    def get_suspects(self) -> List[Suspect]:
+        return Suspect.all()
 
-    def maj_suspect(self, id_suspect, data: dict):
-        update("Suspect", id_suspect, data)
+    def supprimer_suspect(self, id_suspect: int):
+        s = Suspect.get(id_suspect)
+        if s:
+            s.delete()
 
-    def supprimer_suspect(self, id_suspect):
-        delete("Suspect", id_suspect)
+    def maj_suspect(self, id_suspect: int, data: dict):
+        s = Suspect.get(id_suspect)
+        if s:
+            s.update(**data)
 
     # ============================================================
-    #                 CRUD : PREUVES
+    #                     PREUVES
     # ============================================================
 
-    def creer_preuve(self, type, id_affaire, description=None, date=None, lieu=None, id_suspect=None):
-        return insert("Preuve", {
-            "type": type,
-            "description": description,
-            "date": date,
-            "lieu": lieu,
-            "id_affaire": id_affaire,
-            "id_suspect": id_suspect
-        })
+    def creer_preuve(self, *args, **kwargs) -> Preuve:
+        p = Preuve(
+            id_preuve=None,
+            type=kwargs["type"],
+            id_affaire=kwargs["id_affaire"],
+            description=kwargs.get("description"),
+            date=kwargs.get("date"),
+            lieu=kwargs.get("lieu"),
+            id_suspect=kwargs.get("id_suspect"),
+        )
+        p.save()
+        return p
 
-    def get_preuves(self):
-        return get_all("Preuve")
+    def get_preuve(self, id_preuve: int) -> Optional[Preuve]:
+        return Preuve.get(id_preuve)
 
-    def get_preuve(self, id_preuve):
-        return get_by_id("Preuve", id_preuve)
+    def get_preuves(self) -> List[Preuve]:
+        return Preuve.all()
 
-    def maj_preuve(self, id_preuve, data: dict):
-        update("Preuve", id_preuve, data)
+    def supprimer_preuve(self, id_preuve: int):
+        p = Preuve.get(id_preuve)
+        if p:
+            p.delete()
 
-    def supprimer_preuve(self, id_preuve):
-        delete("Preuve", id_preuve)
-
-    # ============================================================
-    #                 CRUD : ARMES
-    # ============================================================
-
-    def creer_arme(self, type, id_affaire, description=None, numéro_série=None):
-        return insert("Arme", {
-            "type": type,
-            "description": description,
-            "numéro_série": numéro_série,
-            "id_affaire": id_affaire
-        })
-
-    def get_armes(self):
-        return get_all("Arme")
-
-    def get_arme(self, id_arme):
-        return get_by_id("Arme", id_arme)
-
-    def maj_arme(self, id_arme, data: dict):
-        update("Arme", id_arme, data)
-
-    def supprimer_arme(self, id_arme):
-        delete("Arme", id_arme)
+    def maj_preuve(self, id_preuve: int, data: dict):
+        p = Preuve.get(id_preuve)
+        if p:
+            for k, v in data.items():
+                setattr(p, k, v)
+            p.save()
 
     # ============================================================
-    #                 CRUD : LIEUX
+    #                     ARMES
     # ============================================================
 
-    def creer_lieu(self, nom, id_affaire, adresse=None, type=None):
-        return insert("Lieu", {
-            "nom": nom,
-            "adresse": adresse,
-            "type": type,
-            "id_affaire": id_affaire
-        })
+    def creer_arme(self, *args, **kwargs) -> Arme:
+        return Arme.create(*args, **kwargs)
 
-    def get_lieux(self):
-        return get_all("Lieu")
+    def get_arme(self, id_arme: int) -> Optional[Arme]:
+        return Arme.get(id_arme)
 
-    def get_lieu(self, id_lieu):
-        return get_by_id("Lieu", id_lieu)
+    def get_armes(self) -> List[Arme]:
+        return Arme.all()
 
-    def maj_lieu(self, id_lieu, data: dict):
-        update("Lieu", id_lieu, data)
+    def supprimer_arme(self, id_arme: int):
+        a = Arme.get(id_arme)
+        if a:
+            a.delete()
 
-    def supprimer_lieu(self, id_lieu):
-        delete("Lieu", id_lieu)
-
-    # ============================================================
-    #                 CRUD : AGENTS
-    # ============================================================
-
-    def creer_agent(self, nom, prénom, grade=None, service=None):
-        return insert("Agent", {
-            "nom": nom,
-            "prénom": prénom,
-            "grade": grade,
-            "service": service
-        })
-
-    def get_agents(self):
-        return get_all("Agent")
-
-    def get_agent(self, id_agent):
-        return get_by_id("Agent", id_agent)
-
-    def maj_agent(self, id_agent, data: dict):
-        update("Agent", id_agent, data)
-
-    def supprimer_agent(self, id_agent):
-        delete("Agent", id_agent)
+    def maj_arme(self, id_arme: int, data: dict):
+        a = Arme.get(id_arme)
+        if a:
+            a.update(**data)
 
     # ============================================================
-    #                 RELATIONS ENTRE ENTITÉS
+    #                     LIEUX
     # ============================================================
 
-    def creer_relation(self, type, id_entite1, id_entite2, description=None):
-        """
-        type : ex 'connaît', 'lié à', 'a vu', 'parent de', etc.
-        """
+    def creer_lieu(self, *args, **kwargs) -> Lieu:
+        return Lieu.create(*args, **kwargs)
+
+    def get_lieu(self, id_lieu: int) -> Optional[Lieu]:
+        return Lieu.get(id_lieu)
+
+    def get_lieux(self) -> List[Lieu]:
+        return Lieu.all()
+
+    def supprimer_lieu(self, id_lieu: int):
+        l = Lieu.get(id_lieu)
+        if l:
+            l.delete()
+
+    def maj_lieu(self, id_lieu: int, data: dict):
+        l = Lieu.get(id_lieu)
+        if l:
+            l.update(**data)
+
+    # ============================================================
+    #                     RELATIONS
+    # ============================================================
+
+    def creer_relation(self, type_rel, uid1, uid2, description=None):
         return insert("Relation", {
-            "type": type,
-            "id_entite1": id_entite1,
-            "id_entite2": id_entite2,
+            "type": type_rel,
+            "id_entite1": uid1,
+            "id_entite2": uid2,
             "description": description
         })
+
 
     def get_relations(self):
         return get_all("Relation")
 
     def supprimer_relation(self, id_relation):
         delete("Relation", id_relation)
+
+    # ============================================================
+    #                     POSITIONS VISUELLES
+    # ============================================================
+
+    def maj_position_affaire(self, id_affaire, x, y):
+        update("Affaire", id_affaire, {"pos_x": x, "pos_y": y})
+
+    def maj_position_suspect(self, id_suspect, x, y):
+        update("Suspect", id_suspect, {"pos_x": x, "pos_y": y})

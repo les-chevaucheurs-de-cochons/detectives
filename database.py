@@ -1,115 +1,125 @@
 import sqlite3
 from sqlite3 import Connection
 
-# Nom du fichier SQLite
 DB_NAME = "detectives.db"
 
 
 def get_connection() -> Connection:
-    """
-    Ouvre une connexion vers la base SQLite.
-    Active également les clés étrangères (désactivées par défaut dans SQLite).
-    """
     conn = sqlite3.connect(DB_NAME)
-    conn.execute("PRAGMA foreign_keys = ON;")  # Activation des clés étrangères
+    conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
 
 def init_db():
-    """
-    Initialise la base de données :
-    - Crée toutes les tables si elles n'existent pas encore
-    - Définit les PK et FK
-    - Garantit l'intégrité référentielle
-    """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # --- TABLE Affaire ---
+    # ============================
+    #   TABLE Affaire
+    # ============================
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS Affaire (
-                      id_affaire INTEGER PRIMARY KEY AUTOINCREMENT,
-                      titre TEXT NOT NULL,
-                      date TEXT NOT NULL,
-                      lieu TEXT NOT NULL,
-                      statut TEXT NOT NULL,
-                      description TEXT
+                                                          id_affaire INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                          titre TEXT NOT NULL,
+                                                          date TEXT NOT NULL,
+                                                          lieu TEXT NOT NULL,
+                                                          statut TEXT NOT NULL,
+                                                          description TEXT,
+                                                          pos_x INTEGER DEFAULT 40,
+                                                          pos_y INTEGER DEFAULT 40
                    );
                    """)
 
-    # --- TABLE Suspect ---
+    # ============================
+    #   TABLE Suspect
+    # ============================
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS Suspect (
-                      id_suspect INTEGER PRIMARY KEY AUTOINCREMENT,
-                      nom TEXT NOT NULL,
-                      prénom TEXT NOT NULL,
-                      âge INTEGER,
-                      adresse TEXT,
-                      description TEXT
+                                                          id_suspect INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                          nom TEXT NOT NULL,
+                                                          prenom TEXT NOT NULL,
+                                                          age INTEGER,
+                                                          adresse TEXT,
+                                                          description TEXT,
+                                                          pos_x INTEGER DEFAULT 80,
+                                                          pos_y INTEGER DEFAULT 80
                    );
                    """)
 
-    # --- TABLE Preuve ---
+    # ============================
+    #   TABLE Preuve
+    # ============================
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS Preuve (
-                     id_preuve INTEGER PRIMARY KEY AUTOINCREMENT,
-                     type TEXT NOT NULL,
-                     description TEXT,
-                     date TEXT,
-                     lieu TEXT,
-                     id_affaire INTEGER NOT NULL,
-                     id_suspect INTEGER,
-                       -- Liens vers Affaire et Suspect
-                       FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE,
+                                                         id_preuve INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                         type TEXT NOT NULL,
+                                                         description TEXT,
+                                                         date TEXT,
+                                                         lieu TEXT,
+                                                         id_affaire INTEGER NOT NULL,
+                                                         id_suspect INTEGER,
+                                                         pos_x INTEGER DEFAULT 120,
+                                                         pos_y INTEGER DEFAULT 120,
+                                                         FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE,
                        FOREIGN KEY (id_suspect) REFERENCES Suspect(id_suspect)
                        );
                    """)
 
-    # --- TABLE Arme ---
+    # ============================
+    #   TABLE Arme
+    # ============================
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS Arme (
-                       id_arme INTEGER PRIMARY KEY AUTOINCREMENT,
-                       type TEXT NOT NULL,
-                       description TEXT,
-                       numéro_série TEXT,
-                       id_affaire INTEGER NOT NULL,
-                       -- L'arme appartient forcément à une affaire
-                        FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE
+                                                       id_arme INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                       type TEXT NOT NULL,
+                                                       description TEXT,
+                                                       numero_serie TEXT,
+                                                       id_affaire INTEGER NOT NULL,
+                                                       pos_x INTEGER DEFAULT 160,
+                                                       pos_y INTEGER DEFAULT 160,
+                                                       FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE
                        );
                    """)
 
-    # --- TABLE Lieu ---
+    # ============================
+    #   TABLE Lieu
+    # ============================
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS Lieu (
-                       id_lieu INTEGER PRIMARY KEY AUTOINCREMENT,
-                       nom TEXT NOT NULL,
-                       adresse TEXT,
-                       type TEXT,
-                       id_affaire INTEGER NOT NULL,
-                       -- Un lieu peut être lié à une affaire
-                        FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE
+                                                       id_lieu INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                       nom TEXT NOT NULL,
+                                                       adresse TEXT,
+                                                       type TEXT,
+                                                       id_affaire INTEGER NOT NULL,
+                                                       pos_x INTEGER DEFAULT 200,
+                                                       pos_y INTEGER DEFAULT 200,
+                                                       FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE
                        );
                    """)
 
-    # --- TABLE Agent ---
+    # ============================
+    #   TABLE Agent
+    # ============================
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS Agent (
-                        id_agent INTEGER PRIMARY KEY AUTOINCREMENT,
-                        nom TEXT NOT NULL,
-                        prénom TEXT NOT NULL,
-                        grade TEXT,
-                        service TEXT
+                                                        id_agent INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                        nom TEXT NOT NULL,
+                                                        prenom TEXT NOT NULL,
+                                                        grade TEXT,
+                                                        service TEXT
                    );
                    """)
 
-    # --- TABLE Relation ---
+    # ============================
+    #   TABLE Relation
+    # ============================
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS Relation (
-                       id_relation INTEGER PRIMARY KEY AUTOINCREMENT,
-                       type TEXT NOT NULL,
-                       id_entite1 INTEGER NOT NULL,
-                       id_entite2 INTEGER NOT NULL,
-                       description TEXT
+                                                           id_relation INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                           type TEXT NOT NULL,
+                                                           id_entite1 INTEGER NOT NULL,
+                                                           id_entite2 INTEGER NOT NULL,
+                                                           description TEXT
                    );
                    """)
 
@@ -119,37 +129,25 @@ def init_db():
 
 
 # ---------------------------------------------------------------------------
-# CRUD GÉNÉRIQUE : fonctions pour simplifier les opérations sur toutes les tables
+# CRUD GÉNÉRIQUE
 # ---------------------------------------------------------------------------
-
 def insert(table: str, data: dict) -> int:
-    """
-    Insère une ligne dans une table.
-    - table : nom de la table
-    - data : dictionnaire { colonne: valeur }
-    Retourne l'ID de la nouvelle entrée.
-    """
     conn = get_connection()
     cursor = conn.cursor()
 
-    colonnes = ", ".join(data.keys())
+    cols = ", ".join(data.keys())
     placeholders = ", ".join(["?"] * len(data))
-    query = f"INSERT INTO {table} ({colonnes}) VALUES ({placeholders})"
+    query = f"INSERT INTO {table} ({cols}) VALUES ({placeholders})"
 
     cursor.execute(query, tuple(data.values()))
     conn.commit()
 
-    inserted_id = cursor.lastrowid  # ID auto-incrémenté
+    inserted_id = cursor.lastrowid
     conn.close()
-
     return inserted_id
 
 
 def get_all(table: str):
-    """
-    Récupère toutes les lignes d'une table.
-    Retourne une liste de tuples.
-    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -161,9 +159,6 @@ def get_all(table: str):
 
 
 def get_by_id(table: str, row_id: int):
-    """
-    Récupère une ligne d'une table selon son ID.
-    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -175,28 +170,20 @@ def get_by_id(table: str, row_id: int):
 
 
 def update(table: str, row_id: int, data: dict):
-    """
-    Met à jour une ligne dans une table.
-    - row_id : ID de la ligne à modifier
-    - data : dictionnaire { colonne: nouvelle_valeur }
-    """
     conn = get_connection()
     cursor = conn.cursor()
 
     champs = ", ".join([f"{k} = ?" for k in data.keys()])
-    valeurs = list(data.values()) + [row_id]
+    values = list(data.values()) + [row_id]
 
     query = f"UPDATE {table} SET {champs} WHERE rowid = ?"
-    cursor.execute(query, valeurs)
+    cursor.execute(query, values)
 
     conn.commit()
     conn.close()
 
 
 def delete(table: str, row_id: int):
-    """
-    Supprime une entrée dans une table selon son ID.
-    """
     conn = get_connection()
     cursor = conn.cursor()
 

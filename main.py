@@ -1,5 +1,8 @@
 from database import init_db, insert, get_all
 
+from backend.gestion_enquete import GestionEnquetes
+from gui.main_window import MainWindow
+
 
 def main():
     print("🔎 Initialisation de la base de données...")
@@ -25,4 +28,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+
+    init_db()
+
+    gestion = GestionEnquetes()
+    gui = MainWindow(gestion)
+    gui.mainloop()
