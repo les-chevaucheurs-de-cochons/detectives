@@ -1,23 +1,24 @@
 import argparse
-from database import init_db, insert, get_all, update, delete
+from database import init_db
+from backend import GestionEnquetes
 
-TABLE_AFFAIRE = "Affaire"
+# Instance centrale de gestion des enquêtes
+gestion = GestionEnquetes()
 
 
 def cmd_creer(args):
-    data = {
-        "titre": args.titre,
-        "date": args.date,
-        "lieu": args.lieu,
-        "statut": args.statut,
-        "description": args.description,
-    }
-    id_affaire = insert(TABLE_AFFAIRE, data)
+    id_affaire = gestion.creer_affaire(
+        titre=args.titre,
+        date=args.date,
+        lieu=args.lieu,
+        statut=args.statut,
+        description=args.description,
+    )
     print(f"✅ Affaire créée avec l'ID : {id_affaire}")
 
 
 def cmd_lister(_args):
-    affaires = get_all(TABLE_AFFAIRE)
+    affaires = gestion.get_affaires()
     if not affaires:
         print("Aucune affaire enregistrée.")
         return
@@ -47,13 +48,12 @@ def cmd_modifier(args):
         print("Aucun champ à modifier n'a été fourni.")
         return
 
-    update(TABLE_AFFAIRE, args.id, data)
+    gestion.maj_affaire(args.id, data)
     print(f"✏️ Affaire {args.id} mise à jour.")
 
 
-
 def cmd_supprimer(args):
-    delete(TABLE_AFFAIRE, args.id)
+    gestion.supprimer_affaire(args.id)
     print(f"🗑️ Affaire {args.id} supprimée.")
 
 
@@ -102,6 +102,7 @@ def build_parser():
 
 
 def main():
+    # Initialise la base avant d'utiliser la gestion des enquêtes
     init_db()
 
     parser = build_parser()
