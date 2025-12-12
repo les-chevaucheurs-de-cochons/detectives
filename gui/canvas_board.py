@@ -16,15 +16,36 @@ RELATION_COLORS = {
 class CanvasBoard(tk.Canvas):
     def __init__(self, parent):
         super().__init__(parent, bg="#1e1e1e", highlightthickness=0)
+
         self.postits = []
         self.lines = []
 
+        # ===========================
+        # ZOOM & PAN VARIABLES
+        # ===========================
+        self.scale_factor = 1.0
+        self.offset_x = 0
+        self.offset_y = 0
+
+        self.bind("<ButtonPress-2>", self.start_pan)   # clic milieu
+        self.bind("<B2-Motion>", self.do_pan)
+
+        # Zoom molette
+        self.bind("<MouseWheel>", self.zoom)
+        self.bind("<Control-MouseWheel>", self.zoom)   # bonus ctrl+molette
+
+    # ============================================================
+    # CANVAS RESET
+    # ============================================================
     def clear(self):
         for i in self.find_all():
             self.delete(i)
         self.postits.clear()
         self.lines.clear()
 
+    # ============================================================
+    # AFFICHAGE ENTITÉS
+    # ============================================================
     def display_all(self):
         self.clear()
 
@@ -48,6 +69,9 @@ class CanvasBoard(tk.Canvas):
 
         self.draw_links()
 
+    # ============================================================
+    # CREATION POST-IT
+    # ============================================================
     def create_postit(self, entity, entity_type):
 
         postit = DraggablePostit(
@@ -57,15 +81,21 @@ class CanvasBoard(tk.Canvas):
             refresh_callback=self.master.refresh_board,
         )
 
-        # UID STOCKÉ DANS LE POSTIT
         postit.uid = entity.uid
 
-        x = getattr(entity, "pos_x", 40)
-        y = getattr(entity, "pos_y", 40)
+        x = getattr(entity, "pos_x", 60)
+        y = getattr(entity, "pos_y", 60)
+
+        # position transformée avec zoom/pan
+        x = (x * self.scale_factor) + self.offset_x
+        y = (y * self.scale_factor) + self.offset_y
 
         postit.window_id = self.create_window(x, y, window=postit, anchor="nw")
         self.postits.append(postit)
 
+    # ============================================================
+    # DESSIN DES LIENS
+    # ============================================================
     def draw_links(self):
         for line in self.lines:
             self.delete(line)
@@ -76,7 +106,6 @@ class CanvasBoard(tk.Canvas):
         for rel in relations:
             id_relation, type_rel, uid1, uid2, desc = rel
 
-            # MATCH VIA UID UNIQUE
             p1 = next((p for p in self.postits if p.uid == uid1), None)
             p2 = next((p for p in self.postits if p.uid == uid2), None)
 
@@ -104,7 +133,37 @@ class CanvasBoard(tk.Canvas):
             self.tag_bind(line, "<Button-1>",
                           lambda e, rel_id=id_relation: self.delete_relation(rel_id))
 
+    # ============================================================
+    # SUPPRESSION LIEN
+    # ============================================================
     def delete_relation(self, rel_id):
         if messagebox.askyesno("Supprimer ?", "Supprimer ce lien ?"):
             self.master.gestion.supprimer_relation(rel_id)
             self.master.refresh_board()
+
+    # ============================================================
+    # PANNING (déplacement)
+    # ============================================================
+    def start_pan(self, event):
+        self.scan_mark(event.x, event.y)
+
+    def do_pan(self, event):
+        self.scan_dragto(event.x, event.y, gain=1)
+        self.draw_links()
+
+    # ============================================================
+    # ZOOM (molette)
+    # ============================================================
+    def zoom(self, event):
+        zoom_factor = 1.1 if event.delta > 0 else 0.9
+
+        self.scale_factor *= zoom_factor
+
+        # zoom centré sur la souris
+        self.scale("all", event.x, event.y, zoom_factor, zoom_factor)
+
+        # recalcul offset
+        self.offset_x = self.canvasx(0)
+        self.offset_y = self.canvasy(0)
+
+        self.draw_links()
