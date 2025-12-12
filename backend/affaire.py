@@ -181,3 +181,8 @@ class Affaire:
         conn.close()
 
         return [Suspect.from_row(r) for r in rows]
+
+    def update_position(self, x, y):
+        self.pos_x = x
+        self.pos_y = y
+        update(self.TABLE_NAME, self.id_affaire, {"pos_x": x, "pos_y": y})
