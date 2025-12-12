@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
+from gui.help_window import HelpWindow
 from gui.canvas_board import CanvasBoard
 from gui.generic_create_window import GenericCreateWindow
 from gui.link_window import LinkWindow
@@ -62,6 +63,13 @@ class MainWindow(tk.Tk):
                    command=self.refresh_board
                    ).pack(fill="x", pady=5)
 
+        ttk.Button(sidebar, text="❓ Aide",
+                   command=self.open_help_window
+                   ).pack(fill="x", pady=5)
+
+
+
+
         # --------------------------
         # ZONE PRINCIPALE : CANVAS
         # --------------------------
@@ -96,3 +104,8 @@ class MainWindow(tk.Tk):
     # =====================================================
     def open_link_window(self):
         LinkWindow(self, self.gestion, self.refresh_board)
+
+    def open_help_window(self):
+        HelpWindow(self)
+
+

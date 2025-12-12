@@ -5,12 +5,7 @@ from gui.generic_details_window import GenericDetailsWindow
 
 class DraggablePostit(ttk.Frame):
     def __init__(self, canvas, entity, entity_type, refresh_callback=None):
-        """
-        canvas : Canvas Tkinter
-        entity : instance des classes backend
-        entity_type : string ("Affaire", "Suspect", "Preuve", "Arme", "Lieu")
-        """
-        super().__init__(canvas, padding=20, style=f"{entity_type}.TFrame")
+        super().__init__(canvas, padding=12, style=f"{entity_type}.TFrame")
 
         self.canvas = canvas
         self.entity = entity
@@ -19,16 +14,18 @@ class DraggablePostit(ttk.Frame):
         self.window_id = None
 
         # -----------------------------------------------------------
-        # Texte visible sur le post-it
+        # TITRE
         # -----------------------------------------------------------
-        ttk.Label(self, text=f"{entity_type} #{entity.id}", font=("Arial", 10, "bold")).pack()
+        ttk.Label(self, text=f"{entity_type} #{entity.id}",
+                  font=("Arial", 11, "bold")).pack()
 
-        # Dynamique : affiche les champs les plus pertinents
-        for attr in ("titre", "nom", "type", "description"):
-            if hasattr(entity, attr):
-                val = getattr(entity, attr)
-                if val:
-                    ttk.Label(self, text=str(val)[:30]).pack()
+        # -----------------------------------------------------------
+        # CHAMPS PERTINENTS
+        # -----------------------------------------------------------
+        info_lines = self._extract_display_info(entity, entity_type)
+
+        for line in info_lines:
+            ttk.Label(self, text=line, font=("Arial", 9), justify="left").pack(anchor="w")
 
         # -----------------------------------------------------------
         # ÉVÉNEMENTS
@@ -42,15 +39,74 @@ class DraggablePostit(ttk.Frame):
         self.drag_start_y = 0
 
     # -----------------------------------------------------------
-    # DÉTAILS AUTOMATIQUES
+    # EXTRACTION AUTOMATIQUE DES INFOS
+    # -----------------------------------------------------------
+    def _extract_display_info(self, entity, entity_type):
+        """
+        Retourne une liste de lignes courtes à afficher selon le type d'entité.
+        """
+
+        # ===================== AFFAIRE =====================
+        if entity_type == "Affaire":
+            return [
+                f"Titre : {entity.titre[:25]}",
+                f"Date : {entity.date}",
+                f"Statut : {entity.statut}",
+            ]
+
+        # ===================== SUSPECT =====================
+        if entity_type == "Suspect":
+            lines = [
+                f"Nom : {entity.nom}",
+                f"Prénom : {entity.prenom}",
+            ]
+            if hasattr(entity, "age") and entity.age:
+                lines.append(f"Âge : {entity.age}")
+            return lines
+
+        # ===================== PREUVE =====================
+        if entity_type == "Preuve":
+            return [
+                f"Type : {entity.type}",
+                f"Date : {entity.date}",
+                f"Lieu : {entity.lieu}",
+            ]
+
+        # ===================== ARME =====================
+        if entity_type == "Arme":
+            return [
+                f"Type : {entity.type}",
+                f"Série : {entity.numero_serie}",
+            ]
+
+        # ===================== LIEU =====================
+        if entity_type == "Lieu":
+            return [
+                f"Nom : {entity.nom}",
+                f"Type : {entity.type}",
+            ]
+
+        # ===================== DEFAULT (automatique) =====================
+        lines = []
+        for attr in ("nom", "titre", "type", "description"):
+            if hasattr(entity, attr):
+                val = getattr(entity, attr)
+                if val:
+                    lines.append(f"{attr.capitalize()} : {str(val)[:25]}")
+        return lines
+
+    # -----------------------------------------------------------
+    # OUVRIR FENÊTRE DÉTAILS
     # -----------------------------------------------------------
     def open_details(self, event):
         GenericDetailsWindow(
-            parent=self,
+            parent=self.canvas,
             entity=self.entity,
             entity_type=self.entity_type,
+            gestion=self.canvas.master.gestion,
             refresh_callback=self.refresh_callback
         )
+
 
     # -----------------------------------------------------------
     # DRAG & DROP
