@@ -12,11 +12,7 @@ from database import insert, get_all, get_by_id, update, delete   # seulement po
 
 
 class GestionEnquetes:
-    """
-    Gestionnaire central de l’application.
-    Interagit avec les modèles (Affaire, Suspect, Preuve, Arme, Lieu)
-    et la table Relation.
-    """
+
 
     # ============================================================
     #                     AFFAIRES

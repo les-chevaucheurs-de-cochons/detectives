@@ -1,210 +1,316 @@
-from database import init_db
 from backend import GestionEnquetes
+from database import init_db
+from datetime import datetime
+import re
+from typing import Optional
 
 gestion = GestionEnquetes()
 
 
+# ================================
+#  UTILITAIRES
+# ================================
+
+def valider_date_fr(date_str: str) -> bool:
+    """Valide format JJ-MM-AAAA"""
+    if not re.match(r"^\d{2}-\d{2}-\d{4}$", date_str):
+        return False
+    try:
+        datetime.strptime(date_str, "%d-%m-%Y")
+        return True
+    except ValueError:
+        return False
+
+
+def saisie_obligatoire(prompt: str) -> str:
+    while True:
+        valeur = input(prompt).strip()
+        if valeur:
+            return valeur
+        print("❌ Ce champ est obligatoire.")
+
+
+def saisie_date(prompt: str, valeur_defaut: Optional[str] = None) -> str:
+    while True:
+        if valeur_defaut is not None:
+            saisie = input(f"{prompt} [{valeur_defaut}] : ").strip()
+            if not saisie:
+                return valeur_defaut
+        else:
+            saisie = input(f"{prompt} : ").strip()
+
+        if valider_date_fr(saisie):
+            return saisie
+        print("❌ Date invalide. Attendu : JJ-MM-AAAA (ex: 12-12-2025).")
+
+
+def saisie_libre_ou_defaut(prompt: str, valeur_defaut: str) -> str:
+    saisie = input(f"{prompt} [{valeur_defaut}] : ").strip()
+    return saisie or valeur_defaut
+
+
+def saisie_statut() -> str:
+    """1 = en cours, 0 = classée"""
+    while True:
+        choix = input("Statut (1=en cours, 0=classée) : ").strip()
+        if choix == "1":
+            return "en cours"
+        elif choix == "0":
+            return "classée"
+        print("❌ Tapez 1 ou 0")
+
+
+def lister_affaires_court():
+    """Affiche la liste des affaires (version courte pour actions)"""
+    affaires = gestion.get_affaires()
+    if not affaires:
+        print("❌ Aucune affaire trouvée.")
+        return []
+    print(f"\n📋 {len(affaires)} affaire(s) :")
+    for a in affaires:
+        print(f"[{a.id_affaire}] {a.titre} | {a.date} | {a.lieu}")
+    return affaires
+
+
+# ================================
+#  AFFICHAGE
+# ================================
+
 def afficher_banniere():
-    print("_________________________________")
-    print("|    Gestionnaire des affaires   |")
-    print("_________________________________")
-    print()
+    print("\n" + "="*50)
+    print("🔍 GESTIONNAIRE D'AFFAIRES - ENQUÊTEUR")
+    print("="*50)
 
 
-def afficher_menu_principal():
-    print("[lister]    Lister les affaires")
-    print("[filtre]    Filtrer les affaires")
-    print("[ajouter]   Ajouter une nouvelle affaire")
-    print("[modifier]  Modifier une affaire existante")
-    print("[supprimer] Supprimer une affaire")
-    print("[quitter]   Quitter")
-    print()
+def afficher_menu():
+    print("\n1. Lister toutes les affaires")
+    print("2. Filtrer les affaires")
+    print("3. Créer une nouvelle affaire")
+    print("4. Modifier une affaire")
+    print("5. Supprimer une affaire")
+    print("6. Visualiser les liens d'une affaire")
+    print("0. Quitter")
+    print("-"*50)
 
+
+# ================================
+#  ACTIONS
+# ================================
 
 def action_lister():
     affaires = gestion.get_affaires()
     if not affaires:
-        print("Aucune affaire enregistrée.")
-        print()
+        print("❌ Aucune affaire trouvée.")
         return
 
-    print("📋 Affaires :")
+    print(f"\n📋 {len(affaires)} affaire(s) trouvée(s):")
     for a in affaires:
-        # a = (id_affaire, titre, date, lieu, statut, description)
-        print(f"[{a[0]}] {a[1]} – {a[2]} – {a[3]} – {a[4]} – {a[5]}")
+        desc = a.description or "Aucune"
+        print(f"[{a.id_affaire}] {a.titre} | {a.date} | {a.lieu} | {a.statut}")
+        print(f"    {desc}")
     print()
-
-    print("Vous pouvez :")
-    print(" - taper [filtre] pour filtrer les affaires")
-    print(" - taper [retour] pour revenir au menu principal")
-    print()
-    # boucle pour gérer le sous-choix
-    while True:
-        choix = input("Commande (filtre/retour) : ").strip().lower()
-        if choix == "filtre":
-            action_filtre()
-            break
-        elif choix == "retour":
-            break
-        else:
-            print("Commande inconnue, merci de taper 'filtre' ou 'retour'.")
 
 
 def action_filtre():
-    while True:
-        print("Filtres disponibles :")
-        print("[statut1] Affaires en cours")
-        print("[statut0] Affaires classées")
-        print("[retour]  Revenir au menu principal")
-        print()
-        choix = input("Votre choix de filtre : ").strip().lower()
+    # D'abord liste des affaires
+    lister_affaires_court()
 
-        if choix == "retour":
-            print()
-            return
+    print("\n🔍 FILTRES DISPONIBLES:")
+    print("1. Affaires en cours")
+    print("2. Affaires classées")
+    print("3. Rechercher un mot (titre/lieu)")
+    print("4. Entre deux dates")
+    print("0. Retour")
+    print()
 
-        affaires = gestion.get_affaires()
+    choix = input("Votre choix : ").strip()
 
-        if choix == "statut1":
-            affaires = [a for a in affaires if a[4] == "en cours"]
-        elif choix == "statut0":
-            affaires = [a for a in affaires if a[4] == "classée"]
-        else:
-            print("⚠️ Filtre inconnu, réessayez.")
-            print()
-            continue
+    if choix == "0":
+        return
 
-        if not affaires:
-            print("Aucune affaire trouvée pour ce filtre.")
-        else:
-            print("📋 Résultats du filtre :")
-            for a in affaires:
-                print(f"[{a[0]}] {a[1]} – {a[2]} – {a[3]} – {a[4]}")
-        print()
-        # Après un filtrage, on revient au sous-menu filtre
-        # (boucle while continue)
+    affaires = gestion.get_affaires()
 
+    if choix == "1":
+        affaires = [a for a in affaires if a.statut.lower() == "en cours"]
+    elif choix == "2":
+        affaires = [a for a in affaires if a.statut.lower() == "classée"]
+    elif choix == "3":
+        texte = input("Mot à chercher : ").strip().lower()
+        affaires = [a for a in affaires if texte in a.titre.lower() or texte in a.lieu.lower()]
+    elif choix == "4":
+        dmin = saisie_date("Date minimum (JJ-MM-AAAA)")
+        dmax = saisie_date("Date maximum (JJ-MM-AAAA)")
+        affaires = [a for a in affaires if dmin <= a.date <= dmax]
+    else:
+        print("❌ Choix invalide.")
+        return
 
-def action_ajouter():
-    print("Ajout d'une nouvelle affaire :")
-
-    # Boucles pour champs obligatoires
-    while True:
-        titre = input("Titre : ").strip()
-        if titre:
-            break
-        print("Le titre est obligatoire.")
-
-    while True:
-        date = input("Date (ex: 2025-01-01) : ").strip()
-        if date:
-            break
-        print("La date est obligatoire.")
-
-    while True:
-        lieu = input("Lieu : ").strip()
-        if lieu:
-            break
-        print("Le lieu est obligatoire.")
-
-    while True:
-        statut = input("Statut (en cours / classée / ...) : ").strip()
-        if statut:
-            break
-        print("Le statut est obligatoire.")
-
-    description = input("Description (optionnelle) : ").strip() or None
-
-    id_affaire = gestion.creer_affaire(titre, date, lieu, statut, description)
-    print(f"✅ Affaire créée avec l'ID : {id_affaire}")
+    if not affaires:
+        print("❌ Aucun résultat.")
+    else:
+        print(f"\n📋 {len(affaires)} résultat(s):")
+        for a in affaires:
+            print(f"[{a.id_affaire}] {a.titre} ({a.date}, {a.lieu})")
     print()
 
 
+def action_ajouter():
+    print("\n➕ Création d'une nouvelle affaire")
+
+    titre = saisie_obligatoire("Titre : ")
+    date = saisie_date("Date (JJ-MM-AAAA) : ")
+    lieu = saisie_obligatoire("Lieu : ")
+    statut = saisie_statut()  # ← NOUVEAU : 1/0
+    description = input("Description (Entrée pour aucune) : ").strip() or None
+
+    affaire = gestion.creer_affaire(titre, date, lieu, statut, description)
+    print(f"✅ Affaire créée ! ID: {affaire.id_affaire}\n")
+
+
 def action_modifier():
-    # Boucle pour ID valide
-    while True:
-        id_str = input("ID de l'affaire à modifier (ou 'retour') : ").strip().lower()
-        if id_str == "retour":
-            print()
-            return
-        try:
-            id_affaire = int(id_str)
-            break
-        except ValueError:
-            print("⚠️ Merci d'entrer un ID numérique.")
+    # D'abord liste des affaires
+    print("\n📋 LISTE DES AFFAIRES :")
+    lister_affaires_court()
+
+    id_str = input("\nID de l'affaire à modifier (0 pour retour) : ").strip()
+    if id_str == "0":
+        return
+
+    try:
+        id_affaire = int(id_str)
+    except ValueError:
+        print("❌ ID invalide.")
+        return
 
     affaire = gestion.get_affaire(id_affaire)
     if not affaire:
-        print("Affaire introuvable.")
-        print()
+        print("❌ Affaire introuvable.")
         return
 
-    print(f"Modification de l'affaire [{affaire[0]}] {affaire[1]}")
-    titre = input(f"Titre [{affaire[1]}] : ").strip() or affaire[1]
-    date = input(f"Date [{affaire[2]}] : ").strip() or affaire[2]
-    lieu = input(f"Lieu [{affaire[3]}] : ").strip() or affaire[3]
-    statut = input(f"Statut [{affaire[4]}] : ").strip() or affaire[4]
-    description = input(f"Description [{affaire[5]}] : ").strip() or affaire[5]
+    print(f"\n✏️ MODIFICATION [{affaire.id_affaire}] {affaire.titre}")
+    print("Entrée = garder la valeur actuelle\n")
+
+    titre = saisie_libre_ou_defaut("Titre", affaire.titre)
+    date = saisie_date("Date (JJ-MM-AAAA)", affaire.date)
+    lieu = saisie_libre_ou_defaut("Lieu", affaire.lieu)
+    statut = saisie_statut() if input(f"Statut [{affaire.statut}] (1/0 ou Entrée) : ").strip() else affaire.statut
+    description = saisie_libre_ou_defaut("Description", affaire.description or "")
 
     data = {
         "titre": titre,
         "date": date,
         "lieu": lieu,
         "statut": statut,
-        "description": description,
+        "description": description if description else None
     }
+
     gestion.maj_affaire(id_affaire, data)
-    print("✏️ Affaire mise à jour.")
-    print()
+    print("✅ Affaire modifiée !\n")
 
 
 def action_supprimer():
-    while True:
-        id_str = input("ID de l'affaire à supprimer (ou 'retour') : ").strip().lower()
-        if id_str == "retour":
-            print()
-            return
-        try:
-            id_affaire = int(id_str)
-            break
-        except ValueError:
-            print("⚠️ Merci d'entrer un ID numérique.")
+    # D'abord liste des affaires
+    print("\n📋 LISTE DES AFFAIRES :")
+    lister_affaires_court()
 
-    confirm = input(f"Confirmer la suppression de l'affaire {id_affaire} ? (o/N) : ").strip().lower()
-    if confirm == "o":
+    id_str = input("\nID de l'affaire à supprimer (0 pour retour) : ").strip()
+    if id_str == "0":
+        return
+
+    try:
+        id_affaire = int(id_str)
+    except ValueError:
+        print("❌ ID invalide.")
+        return
+
+    if input(f"Supprimer l'affaire {id_affaire} ? (o/N) : ").strip().lower() == 'o':
         gestion.supprimer_affaire(id_affaire)
-        print(f"🗑️ Affaire {id_affaire} supprimée.")
+        print("✅ Affaire supprimée !\n")
     else:
-        print("Suppression annulée.")
+        print("❌ Annulé.\n")
+
+
+def action_liens():
+    # D'abord liste des affaires
+    print("\n📋 LISTE DES AFFAIRES :")
+    lister_affaires_court()
+
+    id_str = input("\nID de l'affaire pour liens (0 pour retour) : ").strip()
+    if id_str == "0":
+        return
+
+    try:
+        id_affaire = int(id_str)
+    except ValueError:
+        print("❌ ID invalide.")
+        return
+
+    affaire_ref = gestion.get_affaire(id_affaire)
+    if not affaire_ref:
+        print("❌ Affaire introuvable.")
+        return
+
+    # Liens simples (date + lieu)
+    liens = []
+    toutes = gestion.get_affaires()
+
+    for autre in toutes:
+        if autre.id_affaire == id_affaire:
+            continue
+
+        communs = []
+
+        # Même date
+        if autre.date == affaire_ref.date:
+            communs.append(f"date: {affaire_ref.date}")
+
+        # Même lieu
+        if autre.lieu.lower() == affaire_ref.lieu.lower():
+            communs.append(f"lieu: {affaire_ref.lieu}")
+
+        if communs:
+            liens.append((autre, communs))
+
+    if not liens:
+        print("❌ Aucun lien trouvé.")
+    else:
+        print(f"\n🔗 LIENS pour [{affaire_ref.id_affaire}] {affaire_ref.titre}:")
+        for autre, communs in liens:
+            print(f"- [{autre.id_affaire}] {autre.titre}: {', '.join(communs)}")
     print()
 
 
-def main():
-    init_db()
+# ================================
+#  BOUCLE PRINCIPALE
+# ================================
+
+def run_cli():
     afficher_banniere()
 
     while True:
-        afficher_menu_principal()
-        choix = input("Votre choix : ").strip().lower()
+        afficher_menu()
+        choix = input("Votre choix : ").strip()
 
-        # boucle de validation simple
-        if choix == "lister":
+        if choix == "1":
             action_lister()
-        elif choix == "filtre":
+        elif choix == "2":
             action_filtre()
-        elif choix == "ajouter":
+        elif choix == "3":
             action_ajouter()
-        elif choix == "modifier":
+        elif choix == "4":
             action_modifier()
-        elif choix == "supprimer":
+        elif choix == "5":
             action_supprimer()
-        elif choix == "quitter":
-            print("Au revoir.")
+        elif choix == "6":
+            action_liens()
+        elif choix == "0":
+            print("👋 Au revoir!")
             break
         else:
-            print("⚠️ Choix inconnu, merci de taper une commande proposée.")
-            print()
+            print("❌ Choix invalide.\n")
+
+        input("\nAppuyez sur Entrée pour continuer...")
 
 
 if __name__ == "__main__":
-    main()
+    run_cli()

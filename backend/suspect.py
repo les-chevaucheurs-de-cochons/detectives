@@ -28,8 +28,8 @@ class Suspect:
     def to_dict(self):
         return {
             "nom": self.nom,
-            "prenom": self.prenom,      # ✔ corrigé
-            "age": self.age,            # ✔ corrigé
+            "prenom": self.prenom,
+            "age": self.age,
             "adresse": self.adresse,
             "description": self.description,
             "pos_x": self.pos_x,
@@ -53,8 +53,8 @@ class Suspect:
     def create(cls, nom, prenom, age=None, adresse=None, description=None):
         data = {
             "nom": nom,
-            "prenom": prenom,     # ✔ corrigé
-            "age": age,           # ✔ corrigé
+            "prenom": prenom,
+            "age": age,
             "adresse": adresse,
             "description": description,
             "pos_x": 80,
