@@ -24,7 +24,6 @@ class Suspect:
     def uid(self):
         return f"S{self.id_suspect}"
 
-
     def to_dict(self):
         return {
             "nom": self.nom,
@@ -64,20 +63,25 @@ class Suspect:
         return cls(new_id, nom, prenom, age, adresse, description)
 
     @classmethod
-    def all(cls):
+    def get(cls, id_suspect: int) -> Optional["Suspect"]:
+        row = get_by_id(cls.TABLE_NAME, id_suspect, pk="id_suspect")
+        return cls.from_row(row) if row else None
+
+    @classmethod
+    def all(cls) -> List["Suspect"]:
         return [cls.from_row(r) for r in get_all(cls.TABLE_NAME)]
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
-        update(self.TABLE_NAME, self.id_suspect, self.to_dict())
+        update(self.TABLE_NAME, self.id_suspect, self.to_dict(), pk="id_suspect")
 
     def update_position(self, x, y):
         self.pos_x = x
         self.pos_y = y
-        update(self.TABLE_NAME, self.id_suspect, {"pos_x": x, "pos_y": y})
+        update(self.TABLE_NAME, self.id_suspect, {"pos_x": x, "pos_y": y}, pk="id_suspect")
 
     def delete(self):
-        delete(self.TABLE_NAME, self.id_suspect)
+        delete(self.TABLE_NAME, self.id_suspect, pk="id_suspect")
         self.id_suspect = None

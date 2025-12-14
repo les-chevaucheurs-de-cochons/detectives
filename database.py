@@ -1,11 +1,13 @@
 import sqlite3
 from sqlite3 import Connection
+from typing import Optional
 
 DB_NAME = "detectives.db"
 
 
 def get_connection() -> Connection:
     conn = sqlite3.connect(DB_NAME)
+    # Active les clés étrangères pour chaque connexion
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
@@ -13,6 +15,18 @@ def get_connection() -> Connection:
 def init_db():
     conn = get_connection()
     cursor = conn.cursor()
+
+    # ============================
+    #   TABLE Ville
+    # ============================
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS Ville (
+                                                        code_postal TEXT PRIMARY KEY,
+                                                        nom TEXT NOT NULL
+                   );
+                   """)
+
+
 
     # ============================
     #   TABLE Affaire
@@ -23,6 +37,7 @@ def init_db():
                                                           titre TEXT NOT NULL,
                                                           date TEXT NOT NULL,
                                                           lieu TEXT NOT NULL,
+                                                          code_postal TEXT,
                                                           statut TEXT NOT NULL,
                                                           description TEXT,
                                                           pos_x INTEGER DEFAULT 40,
@@ -123,6 +138,47 @@ def init_db():
                    );
                    """)
 
+    # ============================
+    #   TABLE AffaireSuspect (N-N)
+    # ============================
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS AffaireSuspect (
+                                                                 id_affaire INTEGER NOT NULL,
+                                                                 id_suspect INTEGER NOT NULL,
+                                                                 PRIMARY KEY (id_affaire, id_suspect),
+                       FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE,
+                       FOREIGN KEY (id_suspect) REFERENCES Suspect(id_suspect) ON DELETE CASCADE
+                       );
+                   """)
+
+    # ============================
+    #   TABLE AffaireArme (N-N)
+    # ============================
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS AffaireArme (
+                                                              id_affaire INTEGER NOT NULL,
+                                                              id_arme INTEGER NOT NULL,
+                                                              PRIMARY KEY (id_affaire, id_arme),
+                       FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE,
+                       FOREIGN KEY (id_arme) REFERENCES Arme(id_arme) ON DELETE CASCADE
+                       );
+                   """)
+
+    # ============================
+    #   TABLE AffaireLieu (N-N)
+    # ============================
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS AffaireLieu (
+                                                              id_affaire INTEGER NOT NULL,
+                                                              id_lieu INTEGER NOT NULL,
+                                                              PRIMARY KEY (id_affaire, id_lieu),
+                       FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE,
+                       FOREIGN KEY (id_lieu) REFERENCES Lieu(id_lieu) ON DELETE CASCADE
+                       );
+                   """)
+
+
+
     conn.commit()
     conn.close()
     print("✅ Base SQLite initialisée avec succès !")
@@ -131,7 +187,8 @@ def init_db():
 # ---------------------------------------------------------------------------
 # CRUD GÉNÉRIQUE
 # ---------------------------------------------------------------------------
-def insert(table: str, data: dict) -> int:
+
+def insert(table: str, data) -> int:
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -158,36 +215,45 @@ def get_all(table: str):
     return rows
 
 
-def get_by_id(table: str, row_id: int):
+def get_by_id(table: str, row_id: int, pk: Optional[str] = None):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute(f"SELECT * FROM {table} WHERE rowid = ?", (row_id,))
+    if pk is None:
+        pk = f"id_{table.lower()}"
+
+    cursor.execute(f"SELECT * FROM {table} WHERE {pk} = ?", (row_id,))
     row = cursor.fetchone()
 
     conn.close()
     return row
 
 
-def update(table: str, row_id: int, data: dict):
+def update(table: str, row_id: int, data, pk: Optional[str] = None):
     conn = get_connection()
     cursor = conn.cursor()
+
+    if pk is None:
+        pk = f"id_{table.lower()}"
 
     champs = ", ".join([f"{k} = ?" for k in data.keys()])
     values = list(data.values()) + [row_id]
 
-    query = f"UPDATE {table} SET {champs} WHERE rowid = ?"
+    query = f"UPDATE {table} SET {champs} WHERE {pk} = ?"
     cursor.execute(query, values)
 
     conn.commit()
     conn.close()
 
 
-def delete(table: str, row_id: int):
+def delete(table: str, row_id: int, pk: Optional[str] = None):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute(f"DELETE FROM {table} WHERE rowid = ?", (row_id,))
+    if pk is None:
+        pk = f"id_{table.lower()}"
+
+    cursor.execute(f"DELETE FROM {table} WHERE {pk} = ?", (row_id,))
     conn.commit()
 
     conn.close()

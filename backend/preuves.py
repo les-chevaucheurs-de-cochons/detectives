@@ -1,4 +1,3 @@
-# backend/preuves.py
 from dataclasses import dataclass
 from typing import Optional
 from database import insert, get_all, get_by_id, update, delete

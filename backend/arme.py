@@ -1,6 +1,5 @@
-# backend/arme.py
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 from database import insert, get_all, get_by_id, update, delete
 
 
@@ -23,7 +22,6 @@ class Arme:
     @property
     def uid(self):
         return f"R{self.id_arme}"
-
 
     def to_dict(self):
         return {
@@ -53,20 +51,25 @@ class Arme:
         return cls(new_id, type, description, numero_serie, id_affaire)
 
     @classmethod
-    def all(cls):
+    def get(cls, id_arme: int) -> Optional["Arme"]:
+        row = get_by_id(cls.TABLE_NAME, id_arme, pk="id_arme")
+        return cls.from_row(row) if row else None
+
+    @classmethod
+    def all(cls) -> List["Arme"]:
         return [cls.from_row(r) for r in get_all(cls.TABLE_NAME)]
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
-        update(self.TABLE_NAME, self.id_arme, self.to_dict())
+        update(self.TABLE_NAME, self.id_arme, self.to_dict(), pk="id_arme")
 
     def update_position(self, x, y):
         self.pos_x = x
         self.pos_y = y
-        update(self.TABLE_NAME, self.id_arme, {"pos_x": x, "pos_y": y})
+        update(self.TABLE_NAME, self.id_arme, {"pos_x": x, "pos_y": y}, pk="id_arme")
 
     def delete(self):
-        delete(self.TABLE_NAME, self.id_arme)
+        delete(self.TABLE_NAME, self.id_arme, pk="id_arme")
         self.id_arme = None

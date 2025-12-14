@@ -1,6 +1,5 @@
-# backend/lieu.py
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 from database import insert, get_all, get_by_id, update, delete
 
 
@@ -23,7 +22,6 @@ class Lieu:
     @property
     def uid(self):
         return f"L{self.id_lieu}"
-
 
     def to_dict(self):
         return {
@@ -53,20 +51,25 @@ class Lieu:
         return cls(new_id, nom, adresse, type, id_affaire)
 
     @classmethod
-    def all(cls):
+    def get(cls, id_lieu: int) -> Optional["Lieu"]:
+        row = get_by_id(cls.TABLE_NAME, id_lieu, pk="id_lieu")
+        return cls.from_row(row) if row else None
+
+    @classmethod
+    def all(cls) -> List["Lieu"]:
         return [cls.from_row(r) for r in get_all(cls.TABLE_NAME)]
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
-        update(self.TABLE_NAME, self.id_lieu, self.to_dict())
+        update(self.TABLE_NAME, self.id_lieu, self.to_dict(), pk="id_lieu")
 
     def update_position(self, x, y):
         self.pos_x = x
         self.pos_y = y
-        update(self.TABLE_NAME, self.id_lieu, {"pos_x": x, "pos_y": y})
+        update(self.TABLE_NAME, self.id_lieu, {"pos_x": x, "pos_y": y}, pk="id_lieu")
 
     def delete(self):
-        delete(self.TABLE_NAME, self.id_lieu)
+        delete(self.TABLE_NAME, self.id_lieu, pk="id_lieu")
         self.id_lieu = None
