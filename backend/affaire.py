@@ -13,8 +13,14 @@ class Affaire:
     code_postal: Optional[str]
     statut: str
     description: Optional[str] = None
+    pos_x: int = 40
+    pos_y: int = 40
 
     TABLE_NAME = "Affaire"
+
+    # =========================
+    #  CONVERSIONS
+    # =========================
 
     def to_dict(self) -> dict:
         return {
@@ -24,6 +30,8 @@ class Affaire:
             "code_postal": self.code_postal,
             "statut": self.statut,
             "description": self.description,
+            "pos_x": self.pos_x,
+            "pos_y": self.pos_y,
         }
 
     @property
@@ -34,11 +42,19 @@ class Affaire:
     def uid(self):
         return f"A{self.id_affaire}"
 
+    # =========================
+    #  FACTORY / CRUD
+    # =========================
+
     @classmethod
     def from_row(cls, row: tuple) -> "Affaire":
-        # (id_affaire, titre, date, lieu, code_postal, statut, description, pos_x, pos_y)
+        """
+        Ordre SQL attendu :
+        (id_affaire, titre, date, lieu, code_postal, statut, description, pos_x, pos_y)
+        """
         if row is None:
             raise ValueError("Ligne SQL vide pour Affaire")
+
         return cls(
             id_affaire=row[0],
             titre=row[1],
@@ -47,6 +63,8 @@ class Affaire:
             code_postal=row[4],
             statut=row[5],
             description=row[6],
+            pos_x=row[7],
+            pos_y=row[8],
         )
 
     @classmethod
@@ -59,6 +77,7 @@ class Affaire:
             statut: str,
             description: Optional[str] = None,
     ) -> "Affaire":
+
         data = {
             "titre": titre,
             "date": date,
@@ -66,8 +85,12 @@ class Affaire:
             "code_postal": code_postal,
             "statut": statut,
             "description": description,
+            "pos_x": 40,
+            "pos_y": 40,
         }
+
         new_id = insert(cls.TABLE_NAME, data)
+
         return cls(
             id_affaire=new_id,
             titre=titre,
@@ -76,6 +99,8 @@ class Affaire:
             code_postal=code_postal,
             statut=statut,
             description=description,
+            pos_x=40,
+            pos_y=40,
         )
 
     @classmethod
@@ -100,11 +125,27 @@ class Affaire:
         self.save()
 
     def delete(self) -> None:
-        if self.id_affaire:
+        if self.id_affaire is not None:
             delete(self.TABLE_NAME, self.id_affaire, pk="id_affaire")
             self.id_affaire = None
 
-    # ========= LIAISONS =========
+    # =========================
+    #  POSITION VISUELLE (GUI)
+    # =========================
+
+    def update_position(self, x: int, y: int):
+        self.pos_x = x
+        self.pos_y = y
+        update(
+            self.TABLE_NAME,
+            self.id_affaire,
+            {"pos_x": x, "pos_y": y},
+            pk="id_affaire"
+        )
+
+    # =========================
+    #  LIAISONS
+    # =========================
 
     def get_suspects(self):
         from backend.suspect import Suspect
