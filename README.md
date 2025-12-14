@@ -1,101 +1,111 @@
-# 🕵️‍♂️ Logiciel de Gestion d’Enquêtes Criminelles (Projet Python)
-
-
----
-
-# 📌 Présentation du projet
-
-Ce projet a pour objectif de créer une **application complète de gestion d’enquêtes criminelles**, destinée aux enquêteurs, analystes et équipes d’investigation.
-
-L’idée principale est de proposer un outil permettant de :
-
-- Centraliser toutes les informations d’une enquête (suspects, preuves, lieux, armes…)
-- Visualiser les liens entre différentes affaires comme sur un **mur d’enquête**
-- Offrir un mode **interface graphique (GUI)** et un mode **ligne de commande (CLI)**
-- Faciliter l’analyse, la recherche et l'organisation des dossiers
-
-L’application est développée entièrement en **Python**, avec une base de données locale **SQLite**.
+# 🕵️‍♂️ Logiciel de Gestion d’Enquêtes Criminelles
+### Projet Python – Application Desktop (GUI + CLI)
 
 ---
 
-# 🎯 Objectifs du projet
+## 📌 Présentation du projet
+
+Ce projet consiste en la réalisation d’une application complète de **gestion et d’analyse d’enquêtes criminelles**, destinée aux enquêteurs et analystes.
+
+L’application permet de :
+
+- 📂 Centraliser toutes les informations liées aux enquêtes
+- 🧱 Visualiser les affaires sous forme de **mur d’enquête** (post-it + liens)
+- 🔗 Identifier les **relations entre affaires** (suspects, armes, lieux communs)
+- 💻 Proposer deux modes d’utilisation complémentaires :
+    - une **interface graphique (GUI)** pour la visualisation
+    - une **interface en ligne de commande (CLI)** pour l’analyse détaillée
+
+Le projet est développé entièrement en **Python**, avec une base de données locale **SQLite**.
+
+---
+
+## 🎯 Objectifs du projet
 
 ### ✔ Objectif principal
-Créer une plateforme simple et intuitive permettant de **gérer, analyser et visualiser des enquêtes criminelles**.
+Développer un outil permettant de gérer, analyser et visualiser des enquêtes criminelles de manière claire et cohérente.
 
 ### ✔ Objectifs secondaires
 - Centraliser les données dans une base unique
-- Proposer deux modes d’interaction : GUI et CLI
-- Simplifier la gestion des dossiers d’enquête
-- Afficher visuellement les corrélations entre affaires
-- Accélérer l’analyse et réduire les erreurs
+- Faciliter la corrélation entre différentes affaires
+- Réduire les doublons grâce aux relations entre entités
+- Offrir une visualisation intuitive des liens
+- Permettre une analyse rapide via un CLI interactif
 
 ---
 
-# 🖼️ Interface graphique (GUI)
+## 🖼️ Interface Graphique (GUI)
 
-La partie GUI permet d’obtenir une **visualisation claire et intuitive** des affaires sous forme de **post-it**, reliés entre eux par des **lignes représentant les liens** (suspects communs, armes liées, lieux identiques…).
+La GUI représente les enquêtes sous forme de **post-it** disposés sur un **mur d’enquête**.
 
-Fonctionnalités prévues :
-- Affichage visuel des affaires
-- Lignes de connexion entre les entités
-- Déplacement, zoom, filtres
-- Mode « analyse » pour mettre en évidence les corrélations
-
----
-
-# 💻 Interface en ligne de commande (CLI)
-
-La partie CLI vise les analystes et utilisateurs avancés.
-
-Exemples de commandes :
-- `affaire ajouter "Vol au musée"`
-- `suspect lister`
-- `lien arme "Colt 45"`
-- `affaire afficher 123`
-
-Ce mode permet d’interagir rapidement avec les données sans passer par l’interface graphique.
+### Fonctionnalités principales :
+- 🧾 Affichage visuel des affaires (post-it)
+- 🔗 Lignes reliant les affaires ayant des éléments communs
+- 🖱️ Déplacement individuel des post-it
+- 🧭 Déplacement du mur (pan)
+- 🎨 Couleur des post-it selon le statut (en cours / classée)
+- 🔍 Filtrage dynamique des affaires
+- ✏️ Édition d’une affaire par double-clic
+- 👥 Gestion des suspects, armes et lieux directement dans l’affaire
 
 ---
 
-# 🗄️ Structure des données
+## 💻 Interface en Ligne de Commande (CLI)
 
-Le logiciel gère plusieurs types d’entités, chacune liée à d'autres :
+Le CLI est un **menu interactif**, destiné à l’analyse détaillée et à la manipulation complète des données.
 
-- **Affaire** : Titre, date, lieu, statut, description
-- **Suspect** : Nom, prénom, âge, relations
-- **Preuve** : Type, description, date, lieu
-- **Arme** : Type, numéro de série
-- **Lieu** : Adresse, type
-- **Agent** : Policier ou enquêteur lié à l’affaire
-- **Relations** : Connexions entre entités (ex : suspect → affaire, arme → affaire)
+### Lancement du CLI
+```bash
+python affaires_cli.py
+```
 
-Les données sont stockées dans une base **SQLite**, chargée automatiquement au démarrage.
-
----
-
-# 🔧 Technologies utilisées
-
-- 🐍 **Python 3.10+**
-- 🗄 **SQLite** pour la base de données
-- 🪟 **Tkinter** pour l’interface graphique
-- 💬 **CLI personnalisée** pour les commandes
-- 📦 Architecture modulaire (entités, services, interface…)
+### Menu principal
+```
+1. Lister toutes les affaires
+2. Filtrer les affaires
+3. Créer une nouvelle affaire
+4. Modifier une affaire
+5. Supprimer une affaire
+6. Visualiser les liens d'une affaire
+0. Quitter
+```
 
 ---
 
-# 📦 Fonctionnalités principales
+## 🗄️ Modèle de données
 
-- Création / modification / suppression d’affaires
-- Gestion des suspects, preuves, armes, lieux, agents
-- Système de relations automatiques entre entités
-- Visualisation graphique des liens (GUI)
-- Recherche et filtrage intelligent
-- Sauvegarde automatique en base de données
-- Double interface : GUI + CLI
+- Affaire
+- Suspect
+- Arme
+- Lieu
+- Relations entre entités
+
+Les données sont stockées dans une base **SQLite** locale.
 
 ---
 
-# 🛠️ Exemple d’utilisation (CLI)
+## 🔧 Technologies utilisées
 
-TODO
+- Python 3.10+
+- SQLite
+- Tkinter
+- CLI interactif personnalisé
+
+---
+
+## 📦 Installation & Lancement
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Linux / macOS
+.venv\Scripts\activate    # Windows
+python main_cli.py 
+ou 
+python main_gui.py
+```
+
+---
+
+## 📜 Licence
+
+Projet à but pédagogique.
