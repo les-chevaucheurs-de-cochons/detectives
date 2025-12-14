@@ -118,10 +118,8 @@ def init_db():
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS Agent (
                                                         id_agent INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                        nom TEXT NOT NULL,
-                                                        prenom TEXT NOT NULL,
-                                                        grade TEXT,
-                                                        service TEXT
+                                                        identifiant TEXT NOT NULL UNIQUE,
+                                                        password TEXT NOT NULL
                    );
                    """)
 
