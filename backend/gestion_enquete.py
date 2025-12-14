@@ -2,7 +2,6 @@ from typing import List, Optional
 
 from .affaire import Affaire
 from .suspect import Suspect
-from .preuves import Preuve
 from .arme import Arme
 from .lieu import Lieu
 
@@ -58,49 +57,6 @@ class GestionEnquetes:
         s = Suspect.get(id_suspect)
         if s:
             s.update(**data)
-
-    # ============================================================
-    #                     PREUVES
-    # ============================================================
-
-    def creer_preuve(self, *args, **kwargs) -> Preuve:
-        p = Preuve(
-            id_preuve=None,
-            type=kwargs["type"],
-            id_affaire=kwargs["id_affaire"],
-            description=kwargs.get("description"),
-            date=kwargs.get("date"),
-            lieu=kwargs.get("lieu"),
-            id_suspect=kwargs.get("id_suspect"),
-        )
-        p.save()
-        return p
-
-    def get_preuve(self, id_preuve: int) -> Optional[Preuve]:
-        return Preuve.get(id_preuve)
-
-    def get_preuves(self) -> List[Preuve]:
-        return Preuve.all()
-
-    def get_ville(self, code_postal: str):
-        rows = get_all("Ville")
-        for cp, nom in rows:
-            if cp == code_postal:
-                return {"code_postal": cp, "nom": nom}
-        return None
-
-
-    def supprimer_preuve(self, id_preuve: int):
-        p = Preuve.get(id_preuve)
-        if p:
-            p.delete()
-
-    def maj_preuve(self, id_preuve: int, data: dict):
-        p = Preuve.get(id_preuve)
-        if p:
-            for k, v in data.items():
-                setattr(p, k, v)
-            p.save()
 
     # ============================================================
     #                     ARMES
