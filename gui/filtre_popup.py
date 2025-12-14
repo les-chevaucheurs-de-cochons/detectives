@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import simpledialog, messagebox
+from tkinter import ttk, messagebox
 
 
 class FiltrePopup(tk.Toplevel):
@@ -9,18 +9,24 @@ class FiltrePopup(tk.Toplevel):
         self.canvas_view = canvas_view
 
         self.title("🔍 Filtrer les affaires")
-        self.geometry("300x350")
+        self.geometry("300x360")
         self.resizable(False, False)
         self.grab_set()
 
-        tk.Button(self, text="🟡 Affaires en cours", command=self.filtre_en_cours).pack(fill="x", pady=5, padx=10)
-        tk.Button(self, text="⚪ Affaires classées", command=self.filtre_classees).pack(fill="x", pady=5, padx=10)
-        tk.Button(self, text="🔎 Recherche texte", command=self.filtre_texte).pack(fill="x", pady=5, padx=10)
-        tk.Button(self, text="👥 Par suspect", command=self.filtre_suspect).pack(fill="x", pady=5, padx=10)
-        tk.Button(self, text="🔪 Par arme", command=self.filtre_arme).pack(fill="x", pady=5, padx=10)
+        tk.Button(self, text="🟡 Affaires en cours", command=self.filtre_en_cours) \
+            .pack(fill="x", pady=5, padx=10)
+        tk.Button(self, text="⚪ Affaires classées", command=self.filtre_classees) \
+            .pack(fill="x", pady=5, padx=10)
+        tk.Button(self, text="🔎 Recherche texte", command=self.filtre_texte) \
+            .pack(fill="x", pady=5, padx=10)
+        tk.Button(self, text="👥 Par suspect", command=self.filtre_suspect) \
+            .pack(fill="x", pady=5, padx=10)
+        tk.Button(self, text="🔪 Par arme", command=self.filtre_arme) \
+            .pack(fill="x", pady=5, padx=10)
 
         tk.Label(self, text="").pack()
-        tk.Button(self, text="♻️ Réinitialiser", command=self.reset).pack(fill="x", pady=5, padx=10)
+        tk.Button(self, text="♻️ Réinitialiser", command=self.reset) \
+            .pack(fill="x", pady=5, padx=10)
 
     # ------------------------
 
@@ -35,6 +41,7 @@ class FiltrePopup(tk.Toplevel):
         self.destroy()
 
     def filtre_texte(self):
+        from tkinter import simpledialog
         texte = simpledialog.askstring("Recherche", "Mot à chercher :")
         if not texte:
             return
@@ -50,39 +57,76 @@ class FiltrePopup(tk.Toplevel):
         self.canvas_view.appliquer_filtre(resultats)
         self.destroy()
 
+    # ========================
+    # FILTRE PAR SÉLECTION
+    # ========================
+
     def filtre_suspect(self):
         suspects = self.gestion.get_suspects()
         if not suspects:
             return messagebox.showinfo("Info", "Aucun suspect.")
 
-        popup = simpledialog.askinteger("Suspect", "ID du suspect :")
-        if popup is None:
-            return
-
-        resultats = []
-        for a in self.gestion.get_affaires():
-            if popup in {s.id_suspect for s in a.get_suspects()}:
-                resultats.append(a)
-
-        self.canvas_view.appliquer_filtre(resultats)
-        self.destroy()
+        self._select_popup(
+            title="Filtrer par suspect",
+            label="Choisir un suspect :",
+            items=suspects,
+            display=lambda s: f"{s.nom} {s.prenom}",
+            matcher=lambda a, s: s.id_suspect in {x.id_suspect for x in a.get_suspects()}
+        )
 
     def filtre_arme(self):
         armes = self.gestion.get_armes()
         if not armes:
             return messagebox.showinfo("Info", "Aucune arme.")
 
-        popup = simpledialog.askinteger("Arme", "ID de l’arme :")
-        if popup is None:
-            return
+        self._select_popup(
+            title="Filtrer par arme",
+            label="Choisir une arme :",
+            items=armes,
+            display=lambda a: a.nom if hasattr(a, "nom") else f"Arme #{a.id_arme}",
+            matcher=lambda aff, ar: ar.id_arme in {x.id_arme for x in aff.get_armes()}
+        )
 
-        resultats = []
-        for a in self.gestion.get_affaires():
-            if popup in {ar.id_arme for ar in a.get_armes()}:
-                resultats.append(a)
+    # ========================
+    # POPUP GÉNÉRIQUE
+    # ========================
 
-        self.canvas_view.appliquer_filtre(resultats)
-        self.destroy()
+    def _select_popup(self, title, label, items, display, matcher):
+        popup = tk.Toplevel(self)
+        popup.title(title)
+        popup.geometry("300x120")
+        popup.resizable(False, False)
+        popup.grab_set()
+
+        tk.Label(popup, text=label).pack(pady=5)
+
+        var = tk.StringVar()
+        combo = ttk.Combobox(
+            popup,
+            textvariable=var,
+            values=[display(i) for i in items],
+            state="readonly"
+        )
+        combo.pack(fill="x", padx=10)
+        combo.current(0)
+
+        def appliquer():
+            idx = combo.current()
+            selected = items[idx]
+
+            resultats = [
+                a for a in self.gestion.get_affaires()
+                if matcher(a, selected)
+            ]
+
+            self.canvas_view.appliquer_filtre(resultats)
+            popup.destroy()
+            self.destroy()
+
+        tk.Button(popup, text="Filtrer", command=appliquer) \
+            .pack(pady=10)
+
+    # ------------------------
 
     def reset(self):
         self.canvas_view.reset_filtre()
