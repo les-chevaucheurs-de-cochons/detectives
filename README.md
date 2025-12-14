@@ -99,7 +99,9 @@ Les données sont stockées dans une base **SQLite** locale.
 python -m venv .venv
 source .venv/bin/activate   # Linux / macOS
 .venv\Scripts\activate    # Windows
-python main.py
+python main_cli.py 
+ou 
+python main_gui.py
 ```
 
 ---
