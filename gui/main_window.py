@@ -1,111 +1,116 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox
 
-from gui.help_window import HelpWindow
-from gui.canvas_board import CanvasBoard
-from gui.generic_create_window import GenericCreateWindow
-from gui.link_window import LinkWindow
+from gui.sidebar import Sidebar
+from gui.canvas_view import CanvasView
 
 
 class MainWindow(tk.Tk):
     def __init__(self, gestion):
         super().__init__()
+        self.gestion = gestion
 
-        self.title("🕵️ Gestion des Enquêtes - GUI")
+        self.title("Mur d'enquête")
         self.geometry("1200x700")
-        self.minsize(900, 600)
+        self.configure(bg="#ddd")
 
-        self.gestion = gestion  # Instance GestionEnquetes()
+        # Icône (Windows)
+        try:
+            self.iconbitmap("icon.ico")
+        except Exception:
+            pass  # évite crash si icône absente
 
-        # --------------------------
-        # MENU
-        # --------------------------
-        menubar = tk.Menu(self)
-        menu_fichier = tk.Menu(menubar, tearoff=0)
-        menu_fichier.add_command(label="Quitter", command=self.quit)
+        # Sidebar
+        self.sidebar = Sidebar(self)
+        self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
-        menubar.add_cascade(label="Fichier", menu=menu_fichier)
-        self.config(menu=menubar)
+        # Canvas (mur d'enquête)
+        self.canvas_view = CanvasView(self, gestion)
+        self.canvas_view.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-        # --------------------------
-        # PANNEAU LATÉRAL
-        # --------------------------
-        sidebar = ttk.Frame(self, width=250, padding=10)
-        sidebar.pack(side="left", fill="y")
+        # Menu en haut
+        self._create_menu()
 
-        # ----- BOUTONS CRÉATION -----
-        ttk.Button(sidebar, text="➕ Nouvelle affaire",
-                   command=lambda: self.open_create("Affaire")
-                   ).pack(fill="x", pady=5)
-
-        ttk.Button(sidebar, text="➕ Nouveau suspect",
-                   command=lambda: self.open_create("Suspect")
-                   ).pack(fill="x", pady=5)
-
-        ttk.Button(sidebar, text="➕ Nouvelle preuve",
-                   command=lambda: self.open_create("Preuve")
-                   ).pack(fill="x", pady=5)
-
-        ttk.Button(sidebar, text="➕ Nouvelle arme",
-                   command=lambda: self.open_create("Arme")
-                   ).pack(fill="x", pady=5)
-
-        ttk.Button(sidebar, text="➕ Nouveau lieu",
-                   command=lambda: self.open_create("Lieu")
-                   ).pack(fill="x", pady=5)
-
-        # ----- LIENS -----
-        ttk.Button(sidebar, text="🔗 Créer un lien",
-                   command=self.open_link_window
-                   ).pack(fill="x", pady=5)
-
-        ttk.Button(sidebar, text="Actualiser",
-                   command=self.refresh_board
-                   ).pack(fill="x", pady=5)
-
-        ttk.Button(sidebar, text="❓ Aide",
-                   command=self.open_help_window
-                   ).pack(fill="x", pady=5)
-
-
-
-
-        # --------------------------
-        # ZONE PRINCIPALE : CANVAS
-        # --------------------------
-        self.board = CanvasBoard(self)
-        self.board.pack(side="right", fill="both", expand=True)
-
-        self.refresh_board()
-
-    # =====================================================
-    #   Mise à jour de l'affichage
-    # =====================================================
-    def refresh_board(self):
-        self.board.display_all()
-
-    # =====================================================
-    #   FENÊTRES CRÉATION
-    # =====================================================
-    def open_create(self, entity_type):
-        """
-        DOIT respecter la signature :
-        GenericCreateWindow(parent, entity_type, gestion, refresh_callback)
-        """
-        GenericCreateWindow(
-            parent=self,
-            entity_type=entity_type,
-            gestion=self.gestion,
-            refresh_callback=self.refresh_board
+        # Actions sidebar
+        self.sidebar.set_actions(
+            on_add=self.canvas_view.ajouter_affaire,
+            on_filter=self.canvas_view.filtrer_affaires,
+            on_help=self._help
         )
 
-    # =====================================================
-    #   LIENS
-    # =====================================================
-    def open_link_window(self):
-        LinkWindow(self, self.gestion, self.refresh_board)
 
-    def open_help_window(self):
-        HelpWindow(self)
+    # ------------------------------------------------
 
+    def _create_menu(self):
+        menubar = tk.Menu(self)
 
+        # ===== Menu Affaire =====
+        menu_affaire = tk.Menu(menubar, tearoff=0)
+        menu_affaire.add_command(
+            label="➕ Nouvelle affaire",
+            command=self.canvas_view.ajouter_affaire
+        )
+        menu_affaire.add_command(
+            label="🔍 Filtrer les affaires",
+            command=self.canvas_view.filtrer_affaires
+        )
+        menu_affaire.add_command(
+            label="♻️ Réinitialiser le filtre",
+            command=self.canvas_view.reset_filtre
+        )
+        menu_affaire.add_separator()
+        menu_affaire.add_command(
+            label="❌ Quitter",
+            command=self.quit
+        )
+
+        menubar.add_cascade(label="Affaire", menu=menu_affaire)
+
+        # ===== Menu Aide =====
+        menu_aide = tk.Menu(menubar, tearoff=0)
+        menu_aide.add_command(
+            label="📖 Aide / Utilisation",
+            command=self._help
+        )
+        menu_aide.add_separator()
+        menu_aide.add_command(
+            label="À propos",
+            command=self._about
+        )
+        menubar.add_cascade(label="Aide", menu=menu_aide)
+
+        self.config(menu=menubar)
+
+    # ------------------------------------------------
+
+    def _about(self):
+        messagebox.showinfo(
+            "À propos",
+            "Logiciel de gestion d’enquêtes criminelles\n"
+            "Projet Python – GUI + CLI\n\n"
+            "Développé en Python avec Tkinter et SQLite."
+        )
+
+    # ------------------------------------------------
+
+    def _help(self):
+        messagebox.showinfo(
+            "Aide – Utilisation de l'application",
+            "🧱 Mur d'enquête\n"
+            "• Clic droit + glisser : déplacer le mur\n\n"
+
+            "📌 Post-it (affaires)\n"
+            "• Clic gauche + glisser : déplacer une affaire\n"
+            "• Double-clic : modifier l'affaire\n\n"
+
+            "➕ Gestion des affaires\n"
+            "• Menu Affaire → Nouvelle affaire\n"
+            "• Sidebar ou menu pour filtrer les affaires\n\n"
+
+            "🔗 Liens entre affaires\n"
+            "• Les lignes indiquent des éléments communs\n"
+            "• Cliquer sur une ligne affiche les liens\n\n"
+
+            "💾 Sauvegarde\n"
+            "• Les modifications sont enregistrées automatiquement\n"
+        )
