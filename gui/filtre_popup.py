@@ -132,9 +132,14 @@ class FiltrePopup(tk.Toplevel):
             title="Filtrer par arme",
             label="Choisir une arme :",
             items=armes,
-            display=lambda a: a.nom if hasattr(a, "nom") else f"Arme #{a.id_arme}",
+            display=lambda a: (
+                f"{a.type} (n° {a.numero_serie})"
+                if getattr(a, "numero_serie", None)
+                else a.type
+            ),
             matcher=lambda aff, ar: ar.id_arme in {x.id_arme for x in aff.get_armes()}
         )
+
 
     # ========================
     # POPUP GÉNÉRIQUE

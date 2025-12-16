@@ -162,9 +162,21 @@ class AffaireForm(tk.Toplevel):
         if not cp or not ville:
             return messagebox.showerror("Erreur", "Ville obligatoire")
 
-        # Création de la ville si nouvelle
-        if not self.gestion.get_ville(cp):
+        ville_existante = self.gestion.get_ville(cp)
+
+        if ville_existante:
+            # Le code postal existe déjà
+            if ville_existante["nom"] != ville:
+                return messagebox.showerror(
+                    "Erreur",
+                    f"Le code postal {cp} existe déjà pour la ville "
+                    f"« {ville_existante['nom']} ».\n"
+                    "Veuillez sélectionner la ville existante."
+                )
+        else:
+            # Nouvelle ville autorisée
             self.gestion.creer_ville(cp, ville)
+
 
         if self.affaire:
             self.gestion.maj_affaire(
