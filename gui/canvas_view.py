@@ -106,16 +106,56 @@ class CanvasView(tk.Canvas):
     def _communs(self, a1, a2):
         communs = []
 
-        if {s.id_suspect for s in a1.get_suspects()} & {s.id_suspect for s in a2.get_suspects()}:
-            communs.append("Suspect commun")
+        # -------------------------
+        # SUSPECTS COMMUNS
+        # -------------------------
+        suspects1 = {s.id_suspect: s for s in a1.get_suspects()}
+        suspects2 = {s.id_suspect: s for s in a2.get_suspects()}
 
-        if {ar.id_arme for ar in a1.get_armes()} & {ar.id_arme for ar in a2.get_armes()}:
-            communs.append("Arme commune")
+        ids_communs = suspects1.keys() & suspects2.keys()
+        if ids_communs:
+            lignes = []
+            for sid in ids_communs:
+                s = suspects1[sid]
+                lignes.append(f"👥 Suspect commun : {s.prenom} {s.nom}")
+            communs.extend(lignes)
 
-        if {l.id_lieu for l in a1.get_lieux()} & {l.id_lieu for l in a2.get_lieux()}:
-            communs.append("Lieu commun")
+        # -------------------------
+        # ARMES COMMUNES
+        # -------------------------
+        armes1 = {a.id_arme: a for a in a1.get_armes()}
+        armes2 = {a.id_arme: a for a in a2.get_armes()}
+
+        ids_communs = armes1.keys() & armes2.keys()
+        if ids_communs:
+            lignes = []
+            for aid in ids_communs:
+                a = armes1[aid]
+                label = a.type
+                if a.numero_serie:
+                    label += f" (n° {a.numero_serie})"
+                lignes.append(f"🔪 Arme commune : {label}")
+            communs.extend(lignes)
+
+        # -------------------------
+        # LIEUX COMMUNS
+        # -------------------------
+        lieux1 = {l.id_lieu: l for l in a1.get_lieux()}
+        lieux2 = {l.id_lieu: l for l in a2.get_lieux()}
+
+        ids_communs = lieux1.keys() & lieux2.keys()
+        if ids_communs:
+            lignes = []
+            for lid in ids_communs:
+                l = lieux1[lid]
+                label = l.nom
+                if l.adresse:
+                    label += f" ({l.adresse})"
+                lignes.append(f"📍 Lieu commun : {label}")
+            communs.extend(lignes)
 
         return communs
+
 
     # ------------------------------------------------
     # ACTIONS
