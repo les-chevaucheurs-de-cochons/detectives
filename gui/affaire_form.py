@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from datetime import datetime
 import re
 
 from gui.suspects_panel import SuspectsPanel
@@ -107,12 +108,24 @@ class AffaireForm(tk.Toplevel):
 
     # ------------------------------------------------
 
+    def _date_valide(self, date_str: str) -> bool:
+        try:
+            datetime.strptime(date_str, "%d-%m-%Y")
+            return True
+        except ValueError:
+            return False
+
+
     def save(self):
         if not self.var_titre.get().strip():
             return messagebox.showerror("Erreur", "Titre obligatoire")
 
-        if not re.match(DATE_REGEX, self.var_date.get()):
-            return messagebox.showerror("Erreur", "Date invalide (JJ-MM-AAAA)")
+        date_str = self.var_date.get().strip()
+        if not self._date_valide(date_str):
+            return messagebox.showerror(
+                "Erreur",
+                "Date invalide.\nFormat attendu : JJ-MM-AAAA\nExemple : 25-12-2025"
+            )
 
         if not self.var_cp.get().strip() or not self.var_ville.get().strip():
             return messagebox.showerror("Erreur", "Ville obligatoire")
