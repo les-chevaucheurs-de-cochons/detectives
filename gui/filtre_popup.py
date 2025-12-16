@@ -1,5 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from datetime import datetime
+from tkinter import simpledialog
+
 
 
 class FiltrePopup(tk.Toplevel):
@@ -22,6 +25,8 @@ class FiltrePopup(tk.Toplevel):
         tk.Button(self, text="👥 Par suspect", command=self.filtre_suspect) \
             .pack(fill="x", pady=5, padx=10)
         tk.Button(self, text="🔪 Par arme", command=self.filtre_arme) \
+            .pack(fill="x", pady=5, padx=10)
+        tk.Button(self, text="📅 Entre deux dates", command=self.filtre_dates) \
             .pack(fill="x", pady=5, padx=10)
 
         tk.Label(self, text="").pack()
@@ -73,6 +78,50 @@ class FiltrePopup(tk.Toplevel):
             display=lambda s: f"{s.nom} {s.prenom}",
             matcher=lambda a, s: s.id_suspect in {x.id_suspect for x in a.get_suspects()}
         )
+
+    def filtre_dates(self):
+        dmin = simpledialog.askstring(
+            "Filtrer",
+            "Date minimum (JJ-MM-AAAA)\nLaisser vide pour aucune :"
+        )
+        if dmin == "":
+            dmin = None
+
+        dmax = simpledialog.askstring(
+            "Filtrer",
+            "Date maximum (JJ-MM-AAAA)\nLaisser vide pour aucune :"
+        )
+        if dmax == "":
+            dmax = None
+
+        # Conversion sécurisée
+        try:
+            date_min = datetime.strptime(dmin, "%d-%m-%Y") if dmin else None
+            date_max = datetime.strptime(dmax, "%d-%m-%Y") if dmax else None
+        except ValueError:
+            return messagebox.showerror(
+                "Erreur",
+                "Date invalide.\nFormat attendu : JJ-MM-AAAA"
+            )
+
+        # Appliquer le filtre
+        resultats = []
+        for a in self.gestion.get_affaires():
+            try:
+                date_affaire = datetime.strptime(a.date, "%d-%m-%Y")
+            except ValueError:
+                continue  # sécurité si donnée corrompue
+
+            if date_min and date_affaire < date_min:
+                continue
+            if date_max and date_affaire > date_max:
+                continue
+
+            resultats.append(a)
+
+        self.canvas_view.appliquer_filtre(resultats)
+        self.destroy()
+
 
     def filtre_arme(self):
         armes = self.gestion.get_armes()
