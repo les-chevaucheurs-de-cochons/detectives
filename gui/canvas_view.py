@@ -4,15 +4,19 @@ from gui.liens_popup import LiensPopup
 from gui.affaire_form import AffaireForm
 from gui.styles import COLOR_BG, COLOR_LINK
 from gui.filtre_popup import FiltrePopup
+from gui.styles import POSTIT_WIDTH, POSTIT_HEIGHT
 
 
 class CanvasView(tk.Canvas):
     def __init__(self, parent, gestion):
         super().__init__(parent, bg=COLOR_BG)
         self.gestion = gestion
-        self.widgets = {}          # id_affaire -> AffaireWidget
+        self.widgets = {}
         self.liens = []
-        self.affaires_filtrees = None  # None = pas de filtre
+        self.affaires_filtrees = None
+        self.filter_text = "Aucun"
+        self.on_filter_changed = None
+
 
         # =====================
         # Déplacement du mur (PAN)
@@ -21,6 +25,9 @@ class CanvasView(tk.Canvas):
         self.bind("<B3-Motion>", self.do_pan)
 
         self.refresh()
+
+        self.popup_liens = None
+        self.form_creation = None
 
     # ------------------------------------------------
     # PAN DU MUR
@@ -33,6 +40,35 @@ class CanvasView(tk.Canvas):
         self.scan_dragto(event.x, event.y, gain=1)
 
     # ------------------------------------------------
+    # ORGANISATION DU MUR
+    # ------------------------------------------------
+
+    def relayout_affaires(self):
+
+        affaires = self.gestion.get_affaires()
+        if not affaires:
+            return
+
+        margin_x = 40
+        margin_y = 40
+        spacing_x = POSTIT_WIDTH + 40
+        spacing_y = POSTIT_HEIGHT + 40
+        max_per_row = 4  # nb de post-its par ligne
+
+        for index, affaire in enumerate(affaires):
+            row = index // max_per_row
+            col = index % max_per_row
+
+            x = margin_x + col * spacing_x
+            y = margin_y + row * spacing_y
+
+            affaire.update_position(int(x), int(y))
+
+        self.reset_view()
+        self.refresh()
+
+
+    # ------------------------------------------------
     # RAFRAÎCHISSEMENT
     # ------------------------------------------------
 
@@ -41,7 +77,6 @@ class CanvasView(tk.Canvas):
         self.widgets.clear()
         self.liens.clear()
 
-        # Affaires visibles (filtrées ou non)
         affaires = self.affaires_filtrees or self.gestion.get_affaires()
 
         for a in affaires:
@@ -69,7 +104,6 @@ class CanvasView(tk.Canvas):
 
                 communs = self._communs(a, autre)
                 if communs:
-                    # sécurité : les deux doivent être visibles
                     if a.id_affaire not in self.widgets or autre.id_affaire not in self.widgets:
                         continue
 
@@ -89,10 +123,19 @@ class CanvasView(tk.Canvas):
                     self.tag_bind(
                         line,
                         "<Button-1>",
-                        lambda e, c=communs: LiensPopup(self, c)
+                        lambda e, c=communs: self.show_liens_popup(c)
                     )
 
+
                     self.liens.append(line)
+
+    def show_liens_popup(self, communs):
+        if getattr(self, "popup_liens", None) and self.popup_liens.winfo_exists():
+            self.popup_liens.lift()
+            self.popup_liens.focus_set()
+            return
+        self.popup_liens = LiensPopup(self, communs)
+
 
     def redraw_links(self):
         for line in self.liens:
@@ -162,15 +205,36 @@ class CanvasView(tk.Canvas):
     # ------------------------------------------------
 
     def ajouter_affaire(self):
-        AffaireForm(self, self.gestion, on_close=self.refresh)
+        if self.form_creation is not None and self.form_creation.winfo_exists():
+            self.form_creation.lift()
+            self.form_creation.focus_set()
+            return
+
+        def _closed():
+            self.form_creation = None
+            self.refresh()
+
+        self.form_creation = AffaireForm(self, self.gestion, on_close=_closed)
+
 
     def filtrer_affaires(self):
         FiltrePopup(self, self.gestion, self)
 
-    def appliquer_filtre(self, affaires):
+    def appliquer_filtre(self, affaires, label: str):
         self.affaires_filtrees = affaires
+        self.filter_text = label
         self.refresh()
+        if self.on_filter_changed:
+            self.on_filter_changed(label)
 
     def reset_filtre(self):
         self.affaires_filtrees = None
+        self.filter_text = "Aucun"
         self.refresh()
+        if self.on_filter_changed:
+           self.on_filter_changed("Aucun")
+
+
+    def reset_view(self):
+        self.xview_moveto(0)
+        self.yview_moveto(0)

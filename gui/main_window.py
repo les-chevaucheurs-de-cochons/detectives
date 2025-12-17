@@ -28,6 +28,8 @@ class MainWindow(tk.Tk):
         self.canvas_view = CanvasView(self, gestion)
         self.canvas_view.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
+        self.canvas_view.on_filter_changed = self.sidebar.set_filter_text
+
         # Menu en haut
         self._create_menu()
 
@@ -35,6 +37,8 @@ class MainWindow(tk.Tk):
         self.sidebar.set_actions(
             on_add=self.canvas_view.ajouter_affaire,
             on_filter=self.canvas_view.filtrer_affaires,
+            on_center=self.canvas_view.reset_view,
+            on_reset_layout=self.canvas_view.relayout_affaires,
             on_help=self._help
         )
 

@@ -29,6 +29,12 @@ class AffaireForm(tk.Toplevel):
         self.var_cp = tk.StringVar(value=getattr(affaire, "code_postal", ""))
         self.var_ville = tk.StringVar(value=getattr(affaire, "lieu", ""))
 
+        self.transient(parent)
+        self.grab_set()
+        self.focus_set()
+        self.lift()
+
+
         # =======================
         # FORMULAIRE
         # =======================
@@ -212,7 +218,7 @@ class AffaireForm(tk.Toplevel):
             self.on_close()
 
     # ==================================================
-    # ONGLETs
+    # ONGLETS
     # ==================================================
 
     def _activer_tabs(self):

@@ -8,3 +8,7 @@ class LiensPopup(tk.Toplevel):
         for c in communs:
             tk.Label(self, text="• " + c).pack(anchor="w", padx=10)
 
+        self.transient(parent)
+        self.grab_set()
+        self.focus_set()
+        self.lift()
