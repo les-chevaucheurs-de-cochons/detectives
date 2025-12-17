@@ -159,26 +159,6 @@ class GestionEnquetes:
             log.error(f"Tentative modification lieu inexistant : id={id_lieu}")
 
     # ============================================================
-    #                     RELATIONS
-    # ============================================================
-
-    def creer_relation(self, type_rel, uid1, uid2, description=None):
-        insert("Relation", {
-            "type": type_rel,
-            "id_entite1": uid1,
-            "id_entite2": uid2,
-            "description": description
-        })
-        log.info(f"Relation créée : type={type_rel}, {uid1} <-> {uid2}")
-
-    def get_relations(self):
-        return get_all("Relation")
-
-    def supprimer_relation(self, id_relation):
-        delete("Relation", id_relation)
-        log.warning(f"Relation supprimée : id={id_relation}")
-
-    # ============================================================
     #                     POSITIONS VISUELLES
     # ============================================================
 

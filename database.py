@@ -123,18 +123,6 @@ def init_db():
                    );
                    """)
 
-    # ============================
-    #   TABLE Relation
-    # ============================
-    cursor.execute("""
-                   CREATE TABLE IF NOT EXISTS Relation (
-                                                           id_relation INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                           type TEXT NOT NULL,
-                                                           id_entite1 INTEGER NOT NULL,
-                                                           id_entite2 INTEGER NOT NULL,
-                                                           description TEXT
-                   );
-                   """)
 
     # ============================
     #   TABLE AffaireSuspect (N-N)
