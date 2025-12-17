@@ -128,7 +128,7 @@ class FiltrePopup(tk.Toplevel):
         smin = date_min.strftime(fmt) if date_min else "—"
         smax = date_max.strftime(fmt) if date_max else "—"
 
-        self.canvas_view.appliquer_filtre(resultats, f"Entre : {smin} -> {smax}")
+        self.canvas_view.appliquer_filtre(resultats, f"Entre : {smin} -> \n {smax}")
         self.destroy()
 
     def filtre_arme(self):
