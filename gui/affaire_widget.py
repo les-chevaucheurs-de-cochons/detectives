@@ -12,6 +12,7 @@ class AffaireWidget:
 
         self.start_x = 0
         self.start_y = 0
+        self.form_window = None
 
         color = COLOR_EN_COURS if affaire.statut == "en cours" else COLOR_CLASSEE
 
