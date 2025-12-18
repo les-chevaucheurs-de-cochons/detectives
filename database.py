@@ -56,10 +56,12 @@ def init_db():
                                                           age INTEGER,
                                                           adresse TEXT,
                                                           description TEXT,
+                                                          casier INTEGER DEFAULT 0,
                                                           pos_x INTEGER DEFAULT 80,
                                                           pos_y INTEGER DEFAULT 80
                    );
                    """)
+
 
     # ============================
     #   TABLE Preuve
