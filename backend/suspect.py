@@ -3,12 +3,17 @@ from typing import Optional, List
 from database import insert, get_all, get_by_id, update, delete
 
 
+class ValidationSuspectError(Exception):
+    """Exception levée lors d'une validation Suspect invalide."""
+    pass
+
 def ensure_bool(func):
     def wrapper(self, value):
         if not isinstance(value, bool):
-            raise ValueError("Le casier doit être un booléen (True/False).")
+            raise ValidationSuspectError("Le casier doit être un booléen (True/False).")  # ← ValueError → ValidationSuspectError
         return func(self, value)
     return wrapper
+
 
 
 @dataclass
@@ -107,3 +112,21 @@ class Suspect:
     def delete(self):
         delete(self.TABLE_NAME, self.id_suspect, pk="id_suspect")
         self.id_suspect = None
+
+# Exemple complet : définir → lancer → attraper
+if __name__ == "__main__":
+    # 1. Créer suspect
+    suspect = Suspect.create("Dupont", "Jean")
+
+    print(f"1. Casier initial: {suspect.a_casier}")  # False
+
+    # 2. Usage normal
+    suspect.a_casier = True
+    print(f"2. Casier après True: {suspect.a_casier}")  # True
+
+    # 3. Déclencher ET ATTRAPER l'exception
+    try:
+        print("3. Tentative invalide...")
+        suspect.a_casier = "oui"  # ← LANCE ValidationSuspectError !
+    except ValidationSuspectError as e:
+        print(f"✅ Exception ATTRAPÉE: {e}")
