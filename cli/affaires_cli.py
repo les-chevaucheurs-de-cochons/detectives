@@ -2,8 +2,24 @@ from backend import GestionEnquetes
 from datetime import datetime
 import re
 from typing import Optional
+from filtre_affaires import FiltreAffairesCLI
 
 gestion = GestionEnquetes()
+
+class CasierFormatError(Exception):
+    """Exception levée quand le format de casier est invalide."""
+
+def demander_casier() -> bool:
+    while True:
+        rep = input("Casier judiciaire ? (o/n) : ").strip().lower()
+        try:
+            if rep in ("o", "oui", "y", "yes"):
+                return True
+            if rep in ("n", "non", "no"):
+                return False
+            raise CasierFormatError("Réponse invalide, tapez o ou n.")
+        except CasierFormatError as e:
+            print(f"❌ {e}")
 
 
 # ================================
@@ -117,9 +133,12 @@ def choisir_ou_creer_suspects(id_affaire: int):
             prenom = saisie_obligatoire("Prénom suspect : ")
             nom = saisie_obligatoire("Nom suspect : ")
             description = input("Description (optionnelle) : ").strip() or None
-            s = gestion.creer_suspect(nom, prenom, description=description)
+            a_casier = demander_casier()
+
+            s = gestion.creer_suspect(nom, prenom, description=description, casier=a_casier)
             gestion.lier_suspect_affaire(id_affaire, s.id_suspect)
             print(f"✅ Suspect créé et lié (ID {s.id_suspect}).")
+
 
         elif choix == "3":
             if not suspects_actuels:
@@ -398,13 +417,15 @@ def action_lister():
             print("👥 Suspects  : ", end="")
             first = True
             for s in suspects:
+                casier_txt = " [casier]" if s.a_casier else " [aucun casier]"
                 desc = f" — {s.description}" if s.description else ""
-                line = f"{s.prenom} {s.nom}{desc}"
+                line = f"{s.prenom} {s.nom}{casier_txt}{desc}"
                 if first:
                     print(line)
                     first = False
                 else:
                     print(f"               {line}")
+
         else:
             print("👥 Suspects  : Aucun")
 
@@ -454,13 +475,15 @@ def action_filtre():
         return
 
     affaires = gestion.get_affaires()
+    filtre = FiltreAffairesCLI(affaires)
+
 
 
     if choix == "1":
-        affaires = [a for a in affaires if a.statut.lower() == "en cours"]
+        affaires = filtre.en_cours()
 
     elif choix == "2":
-        affaires = [a for a in affaires if a.statut.lower() == "classée"]
+        affaires = filtre.classees()
 
     elif choix == "3":
         texte = input("Mot à chercher : ").strip().lower()
