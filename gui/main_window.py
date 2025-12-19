@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+import re
 
 from gui.sidebar import Sidebar
 from gui.canvas_view import CanvasView
@@ -26,7 +27,8 @@ class MainWindow(tk.Tk):
 
     @icon.setter
     def icon(self, value: str):
-        assert isinstance(value, str) and value.strip(), "le chemin de l'icone doit être une chaîne non vide"
+        if not re.match("^[\w\-]+\.ico$", value):
+            raise ValueError("Le nom de l'icône doit être un fichier .ico valide")
 
         self._icon_path = value
 
