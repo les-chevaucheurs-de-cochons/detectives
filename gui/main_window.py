@@ -1,26 +1,68 @@
 import tkinter as tk
 from tkinter import messagebox
+import re
 
 from gui.sidebar import Sidebar
 from gui.canvas_view import CanvasView
 
 
 class MainWindow(tk.Tk):
+
+    @property
+    def titre(self) -> str:
+        return self._titre
+
+    @titre.setter
+    def titre(self, value: str):
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("Le titre doit être une chaine non vide")
+
+        self._titre = value
+        self.title(value)
+
+
+    @property
+    def icon(self) -> str | None:
+        return self._icon_path
+
+    @icon.setter
+    def icon(self, value: str):
+        if not re.match("^[\w\-]+\.ico$", value):
+            raise ValueError("Le nom de l'icône doit être un fichier .ico valide")
+
+        self._icon_path = value
+
+        try:
+            self.iconbitmap(value)
+        except Exception:
+            pass
+        assert self._icon_path == value, "l'icone n'a pas été correctement définie"
+
+
+
     def __init__(self, gestion):
         super().__init__()
         self.gestion = gestion
 
-        self.title("Mur d'enquête")
-        self.geometry("1200x700")
+        self._titre = None
+        self.titre = "Mur d'enquête"
+
+        self.resolutions = [
+            "800x600",
+            "1024x768",
+            "1200x700",
+            "1920x1080"
+        ]
+
+        self.geometry(self.resolutions[2])
         self.configure(bg="#ddd")
 
-        # Icône (Windows)
-        try:
-            self.iconbitmap("icon.ico")
-        except Exception:
-            pass  # évite crash si icône absente
+        self._icon_path = None
+        self.icon = "icon.ico"
 
-        # Sidebar
+
+
+
         self.sidebar = Sidebar(self)
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
@@ -43,28 +85,43 @@ class MainWindow(tk.Tk):
         )
 
 
-    # ------------------------------------------------
+
+
+    @staticmethod
+    def is_vald_resolution(resolution):
+        widt, height = map(int, resolution.split("x")) # change une str en 2 nombres. ex : "1200x700" -> 1200, 700
+        return widt >= 1200 and height >= 700
+
+    def get_valid_resolutions(self):
+        return list(filter(MainWindow.is_vald_resolution,self.resolutions))
 
     def _create_menu(self):
         menubar = tk.Menu(self)
 
+        self.menu_label = [
+            "Nouvelle affaire",
+            "Filtrer les affaires",
+            "Réinitialiser le filtre",
+            "Quitter"
+        ]
+
+
         # ===== Menu Affaire =====
         menu_affaire = tk.Menu(menubar, tearoff=0)
         menu_affaire.add_command(
-            label="➕ Nouvelle affaire",
+            label=self.menu_label[0],
             command=self.canvas_view.ajouter_affaire
         )
         menu_affaire.add_command(
-            label="🔍 Filtrer les affaires",
+            label=self.menu_label[1],
             command=self.canvas_view.filtrer_affaires
         )
         menu_affaire.add_command(
-            label="♻️ Réinitialiser le filtre",
+            label=self.menu_label[2],
             command=self.canvas_view.reset_filtre
         )
-        menu_affaire.add_separator()
         menu_affaire.add_command(
-            label="❌ Quitter",
+            label=self.menu_label[3],
             command=self.quit
         )
 

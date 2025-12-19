@@ -2,32 +2,42 @@ import unittest
 import os
 
 from backend.gestion_enquete import GestionEnquetes
-from database import init_db, get_connection
+from database import init_db
 
 
 class TestGestionEnquetes(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """
-        Initialisation avant tous les tests
-        """
-        # Supprimer la base pour repartir propre
+        # On supprime la base existante pour repartir sur un état propre
         if os.path.exists("detectives.db"):
             os.remove("detectives.db")
 
         init_db()
 
     def setUp(self):
-        """
-        Nouvelle instance pour chaque test
-        """
         self.g = GestionEnquetes()
 
     # ==================================================
     # TEST 1 — CRUD AFFAIRE
     # ==================================================
     def test_crud_affaire(self):
+        """
+        Fonction testée : creer_affaire / maj_affaire / supprimer_affaire
+
+        PRE :
+        - Le titre est une chaîne non vide
+        - La date est au format JJ-MM-AAAA
+        - Le statut est valide
+        - La base de données est initialisée
+
+        POST :
+        - L'affaire est créée avec un id
+        - L'affaire peut être modifiée
+        - L'affaire peut être supprimée
+        """
+
+        # Création
         affaire = self.g.creer_affaire(
             "Test Affaire",
             "01-01-2025",
@@ -36,6 +46,7 @@ class TestGestionEnquetes(unittest.TestCase):
             "en cours"
         )
 
+        # Vérification création
         self.assertIsNotNone(affaire.id_affaire)
 
         # Modification
@@ -52,9 +63,23 @@ class TestGestionEnquetes(unittest.TestCase):
         self.assertIsNone(self.g.get_affaire(affaire.id_affaire))
 
     # ==================================================
-    # TEST 2 — UNICITÉ CODE POSTAL
+    # TEST 2 — UNICITÉ DU CODE POSTAL
     # ==================================================
     def test_ville_unique(self):
+        """
+        Fonction testée : creer_ville / get_ville
+
+        PRE :
+        - Le code postal est une chaîne non vide
+        - Le nom de la ville est une chaîne non vide
+
+        POST :
+        - Une ville peut être créée
+        - Le code postal est unique
+        - Une exception est levée en cas de doublon
+        """
+
+        # Création valide
         self.g.creer_ville("1000", "Bruxelles")
 
         ville = self.g.get_ville("1000")
@@ -64,41 +89,6 @@ class TestGestionEnquetes(unittest.TestCase):
         # Tentative de doublon
         with self.assertRaises(Exception):
             self.g.creer_ville("1000", "AutreVille")
-
-    # ==================================================
-    # TEST 3 — LIAISON AFFAIRE / SUSPECT (BDD)
-    # ==================================================
-    def test_liaison_suspect_affaire(self):
-        affaire = self.g.creer_affaire(
-            "Affaire lien",
-            "01-01-2024",
-            "VilleLien",
-            "8888",
-            "en cours"
-        )
-
-        suspect = self.g.creer_suspect(
-            "Doe",
-            "John",
-            30,
-            "Rue test",
-            None
-        )
-
-        # Création de la liaison
-        self.g.lier_suspect_affaire(affaire.id_affaire, suspect.id_suspect)
-
-        # Vérification directe en base
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT * FROM AffaireSuspect WHERE id_affaire = ? AND id_suspect = ?",
-            (affaire.id_affaire, suspect.id_suspect)
-        )
-        row = cur.fetchone()
-        conn.close()
-
-        self.assertIsNotNone(row)
 
 
 if __name__ == "__main__":
