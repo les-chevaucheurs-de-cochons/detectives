@@ -52,6 +52,8 @@ class MainWindow(tk.Tk):
         self.icon = "icon.ico"
 
 
+
+
         self.sidebar = Sidebar(self)
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
@@ -79,23 +81,30 @@ class MainWindow(tk.Tk):
     def _create_menu(self):
         menubar = tk.Menu(self)
 
+        self.menu_label = [
+            "Nouvelle affaire",
+            "Filtrer les affaires",
+            "Réinitialiser le filtre",
+            "Quitter"
+        ]
+
+
         # ===== Menu Affaire =====
         menu_affaire = tk.Menu(menubar, tearoff=0)
         menu_affaire.add_command(
-            label="➕ Nouvelle affaire",
+            label=self.menu_label[0],
             command=self.canvas_view.ajouter_affaire
         )
         menu_affaire.add_command(
-            label="🔍 Filtrer les affaires",
+            label=self.menu_label[1],
             command=self.canvas_view.filtrer_affaires
         )
         menu_affaire.add_command(
-            label="♻️ Réinitialiser le filtre",
+            label=self.menu_label[2],
             command=self.canvas_view.reset_filtre
         )
-        menu_affaire.add_separator()
         menu_affaire.add_command(
-            label="❌ Quitter",
+            label=self.menu_label[3],
             command=self.quit
         )
 
