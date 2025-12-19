@@ -6,21 +6,52 @@ from gui.canvas_view import CanvasView
 
 
 class MainWindow(tk.Tk):
+
+    @property
+    def titre(self) -> str:
+        return self._titre
+
+    @titre.setter
+    def titre(self, value: str):
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("Le titre doit être une chaine non vide")
+
+        self._titre = value
+        self.title(value)
+
+
+    @property
+    def icon(self) -> str | None:
+        return self._icon_path
+
+    @icon.setter
+    def icon(self, value: str):
+        assert isinstance(value, str) and value.strip(), "le chemin de l'icone doit être une chaîne non vide"
+
+        self._icon_path = value
+
+        try:
+            self.iconbitmap(value)
+        except Exception:
+            pass
+        assert self._icon_path == value, "l'icone n'a pas été correctement définie"
+
+
+
     def __init__(self, gestion):
         super().__init__()
         self.gestion = gestion
 
-        self.title("Mur d'enquête")
+        self._titre = None
+        self.titre = "Mur d'enquête"
+
         self.geometry("1200x700")
         self.configure(bg="#ddd")
 
-        # Icône (Windows)
-        try:
-            self.iconbitmap("icon.ico")
-        except Exception:
-            pass  # évite crash si icône absente
+        self._icon_path = None
+        self.icon = "icon.ico"
 
-        # Sidebar
+
         self.sidebar = Sidebar(self)
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
