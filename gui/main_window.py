@@ -47,7 +47,14 @@ class MainWindow(tk.Tk):
         self._titre = None
         self.titre = "Mur d'enquête"
 
-        self.geometry("1200x700")
+        self.resolutions = [
+            "800x600",
+            "1024x768",
+            "1200x700",
+            "1920x1080"
+        ]
+
+        self.geometry(self.resolutions[2])
         self.configure(bg="#ddd")
 
         self._icon_path = None
@@ -78,7 +85,15 @@ class MainWindow(tk.Tk):
         )
 
 
-    # ------------------------------------------------
+
+
+    @staticmethod
+    def is_vald_resolution(resolution):
+        widt, height = map(int, resolution.split("x")) # change une str en 2 nombres. ex : "1200x700" -> 1200, 700
+        return widt >= 1200 and height >= 700
+
+    def get_valid_resolutions(self):
+        return list(filter(MainWindow.is_vald_resolution,self.resolutions))
 
     def _create_menu(self):
         menubar = tk.Menu(self)
