@@ -18,6 +18,20 @@ class Affaire:
 
     TABLE_NAME = "Affaire"
 
+    def __init__(self, statut="En cours", **kwargs):
+        self._statut = statut  # storage interne
+
+    @property
+    def statut(self):
+        return self._statut
+
+    @statut.setter
+    def statut(self, value):
+        # validation douce : si valeur étrange, on garde "En cours"
+        allowed = {"en cours", "classée", "classee"}
+        v = str(value).strip().lower()
+        self._statut = value if v in allowed else "En cours"
+
     # =========================
     #  CONVERSIONS
     # =========================
