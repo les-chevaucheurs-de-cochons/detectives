@@ -18,8 +18,8 @@ class Affaire:
 
     TABLE_NAME = "Affaire"
 
-    def __init__(self, statut="En cours", **kwargs):
-        self._statut = statut  # storage interne
+    def __post_init__(self):
+        self._statut = self.statut
 
     @property
     def statut(self):
