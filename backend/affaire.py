@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
+from backend.exceptions import PreconditionError, PostconditionError
 
 from database import insert, get_all, get_by_id, update, delete, get_connection
 
@@ -92,6 +93,12 @@ class Affaire:
             description: Optional[str] = None,
     ) -> "Affaire":
 
+        # -------- PRE --------
+        if not titre or not str(titre).strip():
+            raise PreconditionError(
+                "PRE: le titre de l'affaire ne peut pas être vide."
+            )
+
         data = {
             "titre": titre,
             "date": date,
@@ -104,6 +111,12 @@ class Affaire:
         }
 
         new_id = insert(cls.TABLE_NAME, data)
+
+        # -------- POST --------
+        if new_id is None:
+            raise PostconditionError(
+                "POST: l'id de l'affaire n'a pas été généré après l'insertion."
+            )
 
         return cls(
             id_affaire=new_id,
