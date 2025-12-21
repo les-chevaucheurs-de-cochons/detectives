@@ -1,3 +1,11 @@
+"""
+
+Ce fichier a été développé dans le cadre d’un projet étudiant.
+Certaines parties du code ont été générées ou assistées par une intelligence artificielle
+(ChatGPT), puis relues, comprises et adaptées par l’étudiant.
+
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
@@ -8,18 +16,34 @@ from gui.lieux_panel import LieuxPanel
 
 
 class AffaireForm(tk.Toplevel):
+    """
+    Fenêtre modale permettant de créer ou modifier une affaire.
+    Elle centralise les informations générales et donne accès
+    aux onglets suspects, armes et lieux.
+    """
+
     def __init__(self, parent, gestion, affaire=None, on_close=None):
+        """
+        Constructeur du formulaire d’affaire.
+
+        parent   : fenêtre parente (CanvasView / MainWindow)
+        gestion  : instance de GestionEnquetes (logique métier)
+        affaire  : affaire à modifier (None si création)
+        on_close : callback appelé à la fermeture du formulaire
+        """
         super().__init__(parent)
+
         self.gestion = gestion
         self.affaire = affaire
         self.on_close = on_close
 
+        # Configuration de la fenêtre
         self.title("🗂️ Affaire")
         self.geometry("420x650")
         self.resizable(False, False)
 
         # =======================
-        # Variables
+        # VARIABLES TKINTER
         # =======================
         self.var_titre = tk.StringVar(value=getattr(affaire, "titre", ""))
         self.var_date = tk.StringVar(value=getattr(affaire, "date", ""))
@@ -29,11 +53,11 @@ class AffaireForm(tk.Toplevel):
         self.var_cp = tk.StringVar(value=getattr(affaire, "code_postal", ""))
         self.var_ville = tk.StringVar(value=getattr(affaire, "lieu", ""))
 
+        # Configuration modale (bloque la fenêtre parente)
         self.transient(parent)
         self.grab_set()
         self.focus_set()
         self.lift()
-
 
         # =======================
         # FORMULAIRE
@@ -41,6 +65,7 @@ class AffaireForm(tk.Toplevel):
         form = tk.Frame(self)
         form.pack(fill="x", padx=10, pady=5)
 
+        # Champs principaux
         self._label_entry(form, "Titre *", self.var_titre)
         self._label_entry(form, "Date (JJ-MM-AAAA) *", self.var_date)
 
@@ -57,6 +82,7 @@ class AffaireForm(tk.Toplevel):
         # =======================
         tk.Label(form, text="Ville *").pack(anchor="w")
 
+        # Récupération des villes existantes
         self.villes = self.gestion.get_villes()  # [(cp, nom)]
         self.ville_map = {
             f"{cp} — {nom}": (cp, nom) for cp, nom in self.villes
@@ -70,11 +96,11 @@ class AffaireForm(tk.Toplevel):
         self.combo_ville.pack(fill="x", pady=3)
         self.combo_ville.bind("<<ComboboxSelected>>", self.on_ville_select)
 
-        # Champs CP / Ville
+        # Champs code postal et nom de ville
         self.entry_cp = self._label_entry(form, "Code postal *", self.var_cp)
         self.entry_ville = self._label_entry(form, "Nom de la ville *", self.var_ville)
 
-        # Par défaut : non éditables
+        # Par défaut : champs non modifiables
         self._set_entries_state("readonly")
 
         tk.Label(form, text="Description").pack(anchor="w")
@@ -92,7 +118,7 @@ class AffaireForm(tk.Toplevel):
             tk.Button(btns, text="🗑 Supprimer", command=self.delete).pack(side="right", padx=5)
 
         # =======================
-        # ONGLETs
+        # ONGLETs (Notebook)
         # =======================
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=10)
@@ -105,24 +131,34 @@ class AffaireForm(tk.Toplevel):
         self.notebook.add(self.tab_armes, text="🔪 Armes", state="disabled")
         self.notebook.add(self.tab_lieux, text="📍 Lieux", state="disabled")
 
+        # Activation des onglets uniquement si l’affaire existe
         if self.affaire:
             self._activer_tabs()
 
     # ==================================================
-    # UTILITAIRES
+    # MÉTHODES UTILITAIRES
     # ==================================================
 
     def _label_entry(self, parent, label, var):
+        """
+        Crée un label suivi d’un champ Entry.
+        """
         tk.Label(parent, text=label).pack(anchor="w")
         entry = tk.Entry(parent, textvariable=var)
         entry.pack(fill="x", pady=3)
         return entry
 
     def _set_entries_state(self, state: str):
+        """
+        Active ou désactive les champs code postal et ville.
+        """
         self.entry_cp.config(state=state)
         self.entry_ville.config(state=state)
 
     def _date_valide(self, date_str: str) -> bool:
+        """
+        Vérifie que la date est valide et au format JJ-MM-AAAA.
+        """
         try:
             datetime.strptime(date_str, "%d-%m-%Y")
             return True
@@ -130,10 +166,13 @@ class AffaireForm(tk.Toplevel):
             return False
 
     # ==================================================
-    # VILLE — COMBOBOX
+    # GESTION DE LA VILLE (COMBOBOX)
     # ==================================================
 
     def on_ville_select(self, event):
+        """
+        Gestion de la sélection d’une ville existante ou de la création d’une nouvelle.
+        """
         choix = self.combo_ville.get()
 
         if choix == "➕ Créer une nouvelle ville…":
@@ -152,6 +191,9 @@ class AffaireForm(tk.Toplevel):
     # ==================================================
 
     def save(self):
+        """
+        Valide les données et crée ou met à jour l’affaire.
+        """
         if not self.var_titre.get().strip():
             return messagebox.showerror("Erreur", "Titre obligatoire")
 
@@ -180,10 +222,10 @@ class AffaireForm(tk.Toplevel):
                     "Veuillez sélectionner la ville existante."
                 )
         else:
-            # Nouvelle ville autorisée
+            # Création d’une nouvelle ville
             self.gestion.creer_ville(cp, ville)
 
-
+        # Mise à jour ou création de l’affaire
         if self.affaire:
             self.gestion.maj_affaire(
                 self.affaire.id_affaire,
@@ -218,10 +260,13 @@ class AffaireForm(tk.Toplevel):
             self.on_close()
 
     # ==================================================
-    # ONGLETS
+    # ONGLETs
     # ==================================================
 
     def _activer_tabs(self):
+        """
+        Active et initialise les onglets suspects, armes et lieux.
+        """
         for tab in (self.tab_suspects, self.tab_armes, self.tab_lieux):
             for w in tab.winfo_children():
                 w.destroy()
@@ -239,11 +284,17 @@ class AffaireForm(tk.Toplevel):
     # ==================================================
 
     def delete(self):
+        """
+        Supprime l’affaire après confirmation.
+        """
         if messagebox.askyesno("Confirmer", "Supprimer cette affaire ?"):
             self.gestion.supprimer_affaire(self.affaire.id_affaire)
             self.close()
 
     def close(self):
+        """
+        Ferme proprement le formulaire.
+        """
         if self.on_close:
             self.on_close()
         self.destroy()

@@ -1,71 +1,123 @@
+"""
+
+Ce fichier a été réalisé dans le cadre d’un projet étudiant.
+Certaines parties du code ont été générées ou assistées par une intelligence artificielle
+(ChatGPT), puis relues, comprises et adaptées par l’étudiant.
+
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
 from tkinter import simpledialog
 
 
-
 class FiltrePopup(tk.Toplevel):
+    """
+    Fenêtre popup permettant de filtrer les affaires affichées
+    dans le mur d’enquête selon différents critères :
+    statut, texte, suspect, arme ou période de dates.
+    """
+
     def __init__(self, parent, gestion, canvas_view):
+        """
+        parent       : fenêtre parente (CanvasView)
+        gestion      : instance de GestionEnquetes (logique métier)
+        canvas_view  : vue principale sur laquelle appliquer les filtres
+        """
         super().__init__(parent)
+
         self.gestion = gestion
         self.canvas_view = canvas_view
 
+        # Configuration de la fenêtre
         self.title("🔍 Filtrer les affaires")
         self.geometry("300x360")
         self.resizable(False, False)
-        self.grab_set()
+        self.grab_set()  # fenêtre modale
 
+        # ========================
+        # BOUTONS DE FILTRE
+        # ========================
         tk.Button(self, text="🟡 Affaires en cours", command=self.filtre_en_cours) \
             .pack(fill="x", pady=5, padx=10)
+
         tk.Button(self, text="⚪ Affaires classées", command=self.filtre_classees) \
             .pack(fill="x", pady=5, padx=10)
+
         tk.Button(self, text="🔎 Recherche texte", command=self.filtre_texte) \
             .pack(fill="x", pady=5, padx=10)
+
         tk.Button(self, text="👥 Par suspect", command=self.filtre_suspect) \
             .pack(fill="x", pady=5, padx=10)
+
         tk.Button(self, text="🔪 Par arme", command=self.filtre_arme) \
             .pack(fill="x", pady=5, padx=10)
+
         tk.Button(self, text="📅 Entre deux dates", command=self.filtre_dates) \
             .pack(fill="x", pady=5, padx=10)
 
+        # Bouton de remise à zéro
         tk.Label(self, text="").pack()
         tk.Button(self, text="♻️ Réinitialiser", command=self.reset) \
             .pack(fill="x", pady=5, padx=10)
 
-    # ------------------------
+    # ==================================================
+    # FILTRES SIMPLES
+    # ==================================================
 
     def filtre_en_cours(self):
-        affaires = [a for a in self.gestion.get_affaires() if a.statut == "en cours"]
+        """
+        Filtre toutes les affaires ayant le statut 'en cours'.
+        """
+        affaires = [
+            a for a in self.gestion.get_affaires()
+            if a.statut == "en cours"
+        ]
         self.canvas_view.appliquer_filtre(affaires, "Affaires en cours")
         self.destroy()
 
     def filtre_classees(self):
-        affaires = [a for a in self.gestion.get_affaires() if a.statut == "classée"]
+        """
+        Filtre toutes les affaires ayant le statut 'classée'.
+        """
+        affaires = [
+            a for a in self.gestion.get_affaires()
+            if a.statut == "classée"
+        ]
         self.canvas_view.appliquer_filtre(affaires, "Affaires classées")
         self.destroy()
 
     def filtre_texte(self):
-        from tkinter import simpledialog
+        """
+        Recherche textuelle simple dans le titre et le lieu d’une affaire.
+        """
         texte = simpledialog.askstring("Recherche", "Mot à chercher :")
         if not texte:
             return
 
         texte_low = texte.lower()
         resultats = []
+
         for a in self.gestion.get_affaires():
-            champs = [a.titre.lower(), (a.lieu or "").lower()]
+            champs = [
+                a.titre.lower(),
+                (a.lieu or "").lower()
+            ]
             if any(texte_low in c for c in champs):
                 resultats.append(a)
 
         self.canvas_view.appliquer_filtre(resultats, f"Texte : {texte}")
         self.destroy()
 
-    # ========================
-    # FILTRE PAR SÉLECTION
-    # ========================
+    # ==================================================
+    # FILTRE PAR SÉLECTION (SUSPECT / ARME)
+    # ==================================================
 
     def filtre_suspect(self):
+        """
+        Filtre les affaires liées à un suspect sélectionné.
+        """
         suspects = self.gestion.get_suspects()
         if not suspects:
             return messagebox.showinfo("Info", "Aucun suspect.")
@@ -79,14 +131,63 @@ class FiltrePopup(tk.Toplevel):
         )
 
     def _filtre_suspect_selectionne(self, s):
+        """
+        Applique le filtre après sélection d’un suspect.
+        """
         resultats = [
             a for a in self.gestion.get_affaires()
             if s.id_suspect in {x.id_suspect for x in a.get_suspects()}
         ]
-        self.canvas_view.appliquer_filtre(resultats, f"Par suspect : {s.prenom} {s.nom}")
+        self.canvas_view.appliquer_filtre(
+            resultats,
+            f"Par suspect : {s.prenom} {s.nom}"
+        )
         self.destroy()
 
+    def filtre_arme(self):
+        """
+        Filtre les affaires liées à une arme sélectionnée.
+        """
+        armes = self.gestion.get_armes()
+        if not armes:
+            return messagebox.showinfo("Info", "Aucune arme.")
+
+        self._select_popup(
+            title="Filtrer par arme",
+            label="Choisir une arme :",
+            items=armes,
+            display=lambda a: (
+                f"{a.type} (n° {a.numero_serie})"
+                if getattr(a, "numero_serie", None)
+                else a.type
+            ),
+            on_select=self._filtre_arme_selectionnee
+        )
+
+    def _filtre_arme_selectionnee(self, arme):
+        """
+        Applique le filtre après sélection d’une arme.
+        """
+        resultats = [
+            a for a in self.gestion.get_affaires()
+            if arme.id_arme in {x.id_arme for x in a.get_armes()}
+        ]
+
+        label = arme.type
+        if getattr(arme, "numero_serie", None):
+            label += f" (n° {arme.numero_serie})"
+
+        self.canvas_view.appliquer_filtre(resultats, f"Par arme : {label}")
+        self.destroy()
+
+    # ==================================================
+    # FILTRE PAR DATES
+    # ==================================================
+
     def filtre_dates(self):
+        """
+        Filtre les affaires comprises entre deux dates (optionnelles).
+        """
         dmin = simpledialog.askstring(
             "Filtrer",
             "Date minimum (JJ-MM-AAAA)\nLaisser vide pour aucune :"
@@ -128,46 +229,21 @@ class FiltrePopup(tk.Toplevel):
         smin = date_min.strftime(fmt) if date_min else "—"
         smax = date_max.strftime(fmt) if date_max else "—"
 
-        self.canvas_view.appliquer_filtre(resultats, f"Entre : {smin} -> \n {smax}")
-        self.destroy()
-
-    def filtre_arme(self):
-        armes = self.gestion.get_armes()
-        if not armes:
-            return messagebox.showinfo("Info", "Aucune arme.")
-
-        self._select_popup(
-            title="Filtrer par arme",
-            label="Choisir une arme :",
-            items=armes,
-            display=lambda a: (
-                f"{a.type} (n° {a.numero_serie})"
-                if getattr(a, "numero_serie", None)
-                else a.type
-            ),
-            on_select=self._filtre_arme_selectionnee
+        self.canvas_view.appliquer_filtre(
+            resultats,
+            f"Entre : {smin} -> {smax}"
         )
-
-    def _filtre_arme_selectionnee(self, arme):
-        resultats = [
-            a for a in self.gestion.get_affaires()
-            if arme.id_arme in {x.id_arme for x in a.get_armes()}
-        ]
-
-        label = arme.type
-        if getattr(arme, "numero_serie", None):
-            label += f" (n° {arme.numero_serie})"
-
-        self.canvas_view.appliquer_filtre(resultats, f"Par arme : {label}")
         self.destroy()
 
-
-
-    # ========================
-    # POPUP GÉNÉRIQUE
-    # ========================
+    # ==================================================
+    # POPUP GÉNÉRIQUE DE SÉLECTION
+    # ==================================================
 
     def _select_popup(self, title, label, items, display, on_select):
+        """
+        Popup générique permettant de sélectionner un élément
+        (suspect, arme, etc.) via une Combobox.
+        """
         popup = tk.Toplevel(self)
         popup.title(title)
         popup.geometry("300x120")
@@ -194,9 +270,13 @@ class FiltrePopup(tk.Toplevel):
 
         tk.Button(popup, text="Filtrer", command=appliquer).pack(pady=10)
 
-
-    # ------------------------
+    # ==================================================
+    # RESET
+    # ==================================================
 
     def reset(self):
+        """
+        Supprime tout filtre actif et réaffiche toutes les affaires.
+        """
         self.canvas_view.reset_filtre()
         self.destroy()
