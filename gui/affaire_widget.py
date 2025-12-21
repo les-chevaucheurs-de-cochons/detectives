@@ -12,11 +12,13 @@ class AffaireWidget:
 
         self.start_x = 0
         self.start_y = 0
+        self.form_window = None
 
         color = COLOR_EN_COURS if affaire.statut == "en cours" else COLOR_CLASSEE
 
         x = affaire.pos_x
         y = affaire.pos_y
+
 
         self.rect = canvas.create_rectangle(
             x, y,
@@ -27,6 +29,7 @@ class AffaireWidget:
             tags=("postit",)
         )
 
+        # 2) Créer le texte
         self.text = canvas.create_text(
             x + 10,
             y + 10,
@@ -36,6 +39,24 @@ class AffaireWidget:
             text=self._build_text(),
             tags=("postit",)
         )
+
+
+        bbox = canvas.bbox(self.text)
+        if bbox:
+            tx1, ty1, tx2, ty2 = bbox
+            text_width = tx2 - tx1
+            text_height = ty2 - ty1
+
+
+            new_width = max(POSTIT_WIDTH, text_width + 20)
+            new_height = max(POSTIT_HEIGHT, text_height + 20)
+
+            canvas.coords(
+                self.rect,
+                x, y,
+                x + new_width,
+                y + new_height
+            )
 
 
 
@@ -64,23 +85,35 @@ class AffaireWidget:
         self.start_x = event.x
         self.start_y = event.y
 
-        # Redessiner les liens en temps réel
+
         self.parent.redraw_links()
 
     def on_release(self, event):
-        # Nouvelle position = coin supérieur gauche du rectangle
+
         x1, y1, _, _ = self.canvas.coords(self.rect)
 
         # Sauvegarde en base
         self.affaire.update_position(int(x1), int(y1))
 
     def on_double_click(self, event):
-        AffaireForm(
+
+        if self.form_window is not None and self.form_window.winfo_exists():
+            self.form_window.lift()
+            self.form_window.focus_set()
+            return
+
+        self.form_window = AffaireForm(
             self.canvas,
             self.gestion,
             self.affaire,
-            on_close=self.parent.refresh
+            on_close=self._on_form_close
         )
+
+    def _on_form_close(self):
+
+        self.form_window = None
+        self.parent.refresh()
+
 
     # ------------------------------------------------
 
@@ -89,24 +122,57 @@ class AffaireWidget:
         return (x1 + x2) // 2, (y1 + y2) // 2
 
     def _build_text(self):
-        nb_suspects = len(self.affaire.get_suspects())
-        nb_armes = len(self.affaire.get_armes())
-        nb_lieux = len(self.affaire.get_lieux())
+
+        suspects = self.affaire.get_suspects()
+        armes = self.affaire.get_armes()
+        lieux = self.affaire.get_lieux()
 
         statut = self.affaire.statut.upper()
         date = self.affaire.date
         ville = self.affaire.lieu
         cp = self.affaire.code_postal or "—"
 
+        # Détail suspects
+        if suspects:
+            suspects_lines = [f"   - {s.prenom} {s.nom}" for s in suspects]
+            suspects_block = "👥 Suspects:\n" + "\n".join(suspects_lines)
+        else:
+            suspects_block = "👥 Suspects: aucun"
+
+        # Détail armes
+        if armes:
+            armes_lines = []
+            for a in armes:
+                label = a.type
+                if a.numero_serie:
+                    label += f" (n° {a.numero_serie})"
+                armes_lines.append(f"   - {label}")
+            armes_block = "🔪 Armes:\n" + "\n".join(armes_lines)
+        else:
+            armes_block = "🔪 Armes: aucune"
+
+        # Détail lieux
+        if lieux:
+            lieux_lines = []
+            for l in lieux:
+                label = l.nom
+                if l.adresse:
+                    label += f" ({l.adresse})"
+                lieux_lines.append(f"   - {label}")
+            lieux_block = "📍 Lieux:\n" + "\n".join(lieux_lines)
+        else:
+            lieux_block = "📍 Lieux: aucun"
+
         return (
             f"🗂️ {self.affaire.titre}\n"
             f"📅 {date}\n"
             f"📍 {ville} ({cp})\n"
             f"\n"
-            f"👥 {nb_suspects} suspect(s)\n"
-            f"🔪 {nb_armes} arme(s)\n"
-            f"📍 {nb_lieux} lieu(x)\n"
+            f"{suspects_block}\n"
+            f"\n"
+            f"{armes_block}\n"
+            f"\n"
+            f"{lieux_block}\n"
             f"\n"
             f"⬤ {statut}"
         )
-

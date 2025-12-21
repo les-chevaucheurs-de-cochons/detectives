@@ -56,10 +56,12 @@ def init_db():
                                                           age INTEGER,
                                                           adresse TEXT,
                                                           description TEXT,
+                                                          casier INTEGER DEFAULT 0,
                                                           pos_x INTEGER DEFAULT 80,
                                                           pos_y INTEGER DEFAULT 80
                    );
                    """)
+
 
     # ============================
     #   TABLE Preuve
@@ -123,18 +125,6 @@ def init_db():
                    );
                    """)
 
-    # ============================
-    #   TABLE Relation
-    # ============================
-    cursor.execute("""
-                   CREATE TABLE IF NOT EXISTS Relation (
-                                                           id_relation INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                           type TEXT NOT NULL,
-                                                           id_entite1 INTEGER NOT NULL,
-                                                           id_entite2 INTEGER NOT NULL,
-                                                           description TEXT
-                   );
-                   """)
 
     # ============================
     #   TABLE AffaireSuspect (N-N)

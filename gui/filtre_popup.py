@@ -1,5 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from datetime import datetime
+from tkinter import simpledialog
+
 
 
 class FiltrePopup(tk.Toplevel):
@@ -23,6 +26,8 @@ class FiltrePopup(tk.Toplevel):
             .pack(fill="x", pady=5, padx=10)
         tk.Button(self, text="🔪 Par arme", command=self.filtre_arme) \
             .pack(fill="x", pady=5, padx=10)
+        tk.Button(self, text="📅 Entre deux dates", command=self.filtre_dates) \
+            .pack(fill="x", pady=5, padx=10)
 
         tk.Label(self, text="").pack()
         tk.Button(self, text="♻️ Réinitialiser", command=self.reset) \
@@ -32,12 +37,12 @@ class FiltrePopup(tk.Toplevel):
 
     def filtre_en_cours(self):
         affaires = [a for a in self.gestion.get_affaires() if a.statut == "en cours"]
-        self.canvas_view.appliquer_filtre(affaires)
+        self.canvas_view.appliquer_filtre(affaires, "Affaires en cours")
         self.destroy()
 
     def filtre_classees(self):
         affaires = [a for a in self.gestion.get_affaires() if a.statut == "classée"]
-        self.canvas_view.appliquer_filtre(affaires)
+        self.canvas_view.appliquer_filtre(affaires, "Affaires classées")
         self.destroy()
 
     def filtre_texte(self):
@@ -46,15 +51,14 @@ class FiltrePopup(tk.Toplevel):
         if not texte:
             return
 
-        texte = texte.lower()
+        texte_low = texte.lower()
         resultats = []
-
         for a in self.gestion.get_affaires():
             champs = [a.titre.lower(), (a.lieu or "").lower()]
-            if any(texte in c for c in champs):
+            if any(texte_low in c for c in champs):
                 resultats.append(a)
 
-        self.canvas_view.appliquer_filtre(resultats)
+        self.canvas_view.appliquer_filtre(resultats, f"Texte : {texte}")
         self.destroy()
 
     # ========================
@@ -71,8 +75,61 @@ class FiltrePopup(tk.Toplevel):
             label="Choisir un suspect :",
             items=suspects,
             display=lambda s: f"{s.nom} {s.prenom}",
-            matcher=lambda a, s: s.id_suspect in {x.id_suspect for x in a.get_suspects()}
+            on_select=self._filtre_suspect_selectionne
         )
+
+    def _filtre_suspect_selectionne(self, s):
+        resultats = [
+            a for a in self.gestion.get_affaires()
+            if s.id_suspect in {x.id_suspect for x in a.get_suspects()}
+        ]
+        self.canvas_view.appliquer_filtre(resultats, f"Par suspect : {s.prenom} {s.nom}")
+        self.destroy()
+
+    def filtre_dates(self):
+        dmin = simpledialog.askstring(
+            "Filtrer",
+            "Date minimum (JJ-MM-AAAA)\nLaisser vide pour aucune :"
+        )
+        if dmin == "":
+            dmin = None
+
+        dmax = simpledialog.askstring(
+            "Filtrer",
+            "Date maximum (JJ-MM-AAAA)\nLaisser vide pour aucune :"
+        )
+        if dmax == "":
+            dmax = None
+
+        try:
+            date_min = datetime.strptime(dmin, "%d-%m-%Y") if dmin else None
+            date_max = datetime.strptime(dmax, "%d-%m-%Y") if dmax else None
+        except ValueError:
+            return messagebox.showerror(
+                "Erreur",
+                "Date invalide.\nFormat attendu : JJ-MM-AAAA"
+            )
+
+        resultats = []
+        for a in self.gestion.get_affaires():
+            try:
+                date_affaire = datetime.strptime(a.date, "%d-%m-%Y")
+            except ValueError:
+                continue
+
+            if date_min and date_affaire < date_min:
+                continue
+            if date_max and date_affaire > date_max:
+                continue
+
+            resultats.append(a)
+
+        fmt = "%d-%m-%Y"
+        smin = date_min.strftime(fmt) if date_min else "—"
+        smax = date_max.strftime(fmt) if date_max else "—"
+
+        self.canvas_view.appliquer_filtre(resultats, f"Entre : {smin} -> \n {smax}")
+        self.destroy()
 
     def filtre_arme(self):
         armes = self.gestion.get_armes()
@@ -83,15 +140,34 @@ class FiltrePopup(tk.Toplevel):
             title="Filtrer par arme",
             label="Choisir une arme :",
             items=armes,
-            display=lambda a: a.nom if hasattr(a, "nom") else f"Arme #{a.id_arme}",
-            matcher=lambda aff, ar: ar.id_arme in {x.id_arme for x in aff.get_armes()}
+            display=lambda a: (
+                f"{a.type} (n° {a.numero_serie})"
+                if getattr(a, "numero_serie", None)
+                else a.type
+            ),
+            on_select=self._filtre_arme_selectionnee
         )
+
+    def _filtre_arme_selectionnee(self, arme):
+        resultats = [
+            a for a in self.gestion.get_affaires()
+            if arme.id_arme in {x.id_arme for x in a.get_armes()}
+        ]
+
+        label = arme.type
+        if getattr(arme, "numero_serie", None):
+            label += f" (n° {arme.numero_serie})"
+
+        self.canvas_view.appliquer_filtre(resultats, f"Par arme : {label}")
+        self.destroy()
+
+
 
     # ========================
     # POPUP GÉNÉRIQUE
     # ========================
 
-    def _select_popup(self, title, label, items, display, matcher):
+    def _select_popup(self, title, label, items, display, on_select):
         popup = tk.Toplevel(self)
         popup.title(title)
         popup.geometry("300x120")
@@ -113,18 +189,11 @@ class FiltrePopup(tk.Toplevel):
         def appliquer():
             idx = combo.current()
             selected = items[idx]
-
-            resultats = [
-                a for a in self.gestion.get_affaires()
-                if matcher(a, selected)
-            ]
-
-            self.canvas_view.appliquer_filtre(resultats)
+            on_select(selected)
             popup.destroy()
-            self.destroy()
 
-        tk.Button(popup, text="Filtrer", command=appliquer) \
-            .pack(pady=10)
+        tk.Button(popup, text="Filtrer", command=appliquer).pack(pady=10)
+
 
     # ------------------------
 

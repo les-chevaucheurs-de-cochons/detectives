@@ -3,6 +3,19 @@ from typing import Optional, List
 from database import insert, get_all, get_by_id, update, delete
 
 
+class ValidationSuspectError(Exception):
+    """Exception levée lors d'une validation Suspect invalide."""
+    pass
+
+def ensure_bool(func):
+    def wrapper(self, value):
+        if not isinstance(value, bool):
+            raise ValidationSuspectError("Le casier doit être un booléen (True/False).")  # ← ValueError → ValidationSuspectError
+        return func(self, value)
+    return wrapper
+
+
+
 @dataclass
 class Suspect:
     id_suspect: Optional[int]
@@ -11,6 +24,7 @@ class Suspect:
     age: Optional[int] = None
     adresse: Optional[str] = None
     description: Optional[str] = None
+    casier: bool = False
     pos_x: int = 80
     pos_y: int = 80
 
@@ -24,6 +38,15 @@ class Suspect:
     def uid(self):
         return f"S{self.id_suspect}"
 
+    @property
+    def a_casier(self) -> bool:
+        return self.casier
+
+    @a_casier.setter
+    @ensure_bool
+    def a_casier(self, value: bool):
+        self.casier = value
+
     def to_dict(self):
         return {
             "nom": self.nom,
@@ -31,12 +54,14 @@ class Suspect:
             "age": self.age,
             "adresse": self.adresse,
             "description": self.description,
+            "casier": int(self.casier),
             "pos_x": self.pos_x,
             "pos_y": self.pos_y,
         }
 
     @classmethod
     def from_row(cls, row):
+        # adapter les index si ta colonne casier n'est pas à cette position
         return cls(
             id_suspect=row[0],
             nom=row[1],
@@ -44,23 +69,25 @@ class Suspect:
             age=row[3],
             adresse=row[4],
             description=row[5],
-            pos_x=row[6],
-            pos_y=row[7],
+            casier=bool(row[6]),
+            pos_x=row[7],
+            pos_y=row[8],
         )
 
     @classmethod
-    def create(cls, nom, prenom, age=None, adresse=None, description=None):
+    def create(cls, nom, prenom, age=None, adresse=None, description=None, casier: bool = False):
         data = {
             "nom": nom,
             "prenom": prenom,
             "age": age,
             "adresse": adresse,
             "description": description,
+            "casier": int(casier),
             "pos_x": 80,
             "pos_y": 80,
         }
         new_id = insert(cls.TABLE_NAME, data)
-        return cls(new_id, nom, prenom, age, adresse, description)
+        return cls(new_id, nom, prenom, age, adresse, description, casier)
 
     @classmethod
     def get(cls, id_suspect: int) -> Optional["Suspect"]:
@@ -85,3 +112,21 @@ class Suspect:
     def delete(self):
         delete(self.TABLE_NAME, self.id_suspect, pk="id_suspect")
         self.id_suspect = None
+
+# Exemple complet : définir → lancer → attraper
+if __name__ == "__main__":
+    # 1. Créer suspect
+    suspect = Suspect.create("Dupont", "Jean")
+
+    print(f"1. Casier initial: {suspect.a_casier}")  # False
+
+    # 2. Usage normal
+    suspect.a_casier = True
+    print(f"2. Casier après True: {suspect.a_casier}")  # True
+
+    # 3. Déclencher ET ATTRAPER l'exception
+    try:
+        print("3. Tentative invalide...")
+        suspect.a_casier = "oui"  # ← LANCE ValidationSuspectError !
+    except ValidationSuspectError as e:
+        print(f"✅ Exception ATTRAPÉE: {e}")
