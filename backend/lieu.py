@@ -10,8 +10,6 @@ class Lieu:
     adresse: Optional[str]
     type: Optional[str]
     id_affaire: int
-    pos_x: int = 200
-    pos_y: int = 200
 
     TABLE_NAME = "Lieu"
 
@@ -29,8 +27,6 @@ class Lieu:
             "adresse": self.adresse,
             "type": self.type,
             "id_affaire": self.id_affaire,
-            "pos_x": self.pos_x,
-            "pos_y": self.pos_y,
         }
 
     @classmethod
@@ -44,8 +40,6 @@ class Lieu:
             "adresse": adresse,
             "type": type,
             "id_affaire": id_affaire,
-            "pos_x": 200,
-            "pos_y": 200,
         }
         new_id = insert(cls.TABLE_NAME, data)
         return cls(new_id, nom, adresse, type, id_affaire)
@@ -65,10 +59,6 @@ class Lieu:
                 setattr(self, k, v)
         update(self.TABLE_NAME, self.id_lieu, self.to_dict(), pk="id_lieu")
 
-    def update_position(self, x, y):
-        self.pos_x = x
-        self.pos_y = y
-        update(self.TABLE_NAME, self.id_lieu, {"pos_x": x, "pos_y": y}, pk="id_lieu")
 
     def delete(self):
         delete(self.TABLE_NAME, self.id_lieu, pk="id_lieu")
