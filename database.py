@@ -63,24 +63,6 @@ def init_db():
                    """)
 
 
-    # ============================
-    #   TABLE Preuve
-    # ============================
-    cursor.execute("""
-                   CREATE TABLE IF NOT EXISTS Preuve (
-                                                         id_preuve INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                         type TEXT NOT NULL,
-                                                         description TEXT,
-                                                         date TEXT,
-                                                         lieu TEXT,
-                                                         id_affaire INTEGER NOT NULL,
-                                                         id_suspect INTEGER,
-                                                         pos_x INTEGER DEFAULT 120,
-                                                         pos_y INTEGER DEFAULT 120,
-                                                         FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE,
-                       FOREIGN KEY (id_suspect) REFERENCES Suspect(id_suspect)
-                       );
-                   """)
 
     # ============================
     #   TABLE Arme
@@ -92,8 +74,6 @@ def init_db():
                                                        description TEXT,
                                                        numero_serie TEXT,
                                                        id_affaire INTEGER NOT NULL,
-                                                       pos_x INTEGER DEFAULT 160,
-                                                       pos_y INTEGER DEFAULT 160,
                                                        FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE
                        );
                    """)
@@ -108,8 +88,6 @@ def init_db():
                                                        adresse TEXT,
                                                        type TEXT,
                                                        id_affaire INTEGER NOT NULL,
-                                                       pos_x INTEGER DEFAULT 200,
-                                                       pos_y INTEGER DEFAULT 200,
                                                        FOREIGN KEY (id_affaire) REFERENCES Affaire(id_affaire) ON DELETE CASCADE
                        );
                    """)
